@@ -1,0 +1,50 @@
+{
+  "name": "@yoryi/ai-assistant-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API app for Yoryi AI Core",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "start:dev": "node --watch dist/main.js",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:contracts": "vitest run src/assistant/governance-contract.spec.ts src/assistant/buildingos-readonly-query.gateway.spec.ts",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@types/pg": "^8.20.0",
+    "@yoryi/ai-adapters": "*",
+    "@yoryi/ai-core": "*",
+    "@yoryi/ai-rag": "*",
+    "@yoryi/ai-types": "*",
+    "better-sqlite3": "^11.8.1",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.19",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^25.5.2",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.9"
+  }
+}

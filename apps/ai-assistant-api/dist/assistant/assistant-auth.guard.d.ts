@@ -1,0 +1,30 @@
+import { CanActivate, ExecutionContext } from "@nestjs/common";
+export declare class AssistantAuthGuard implements CanActivate {
+    private readonly jwksCache;
+    private readonly jwksTtlMs;
+    canActivate(context: ExecutionContext): Promise<boolean>;
+    private isTenantValidationEnabled;
+    validateTenantContext(authContext: Record<string, unknown>): void;
+    private isStrictModeEnabledForRequest;
+    private getStrictRolloutPercent;
+    private resolveRolloutKey;
+    private computeRolloutBucket;
+    private extractUserFromJwt;
+    private extractAuthoritativeContext;
+    private extractFromUser;
+    private verifyAndDecodeJwt;
+    private verifyJwtSignature;
+    private validateJwtClaims;
+    private mapJwtPayloadToUser;
+    private extractRoleFromNestedArray;
+    private extractFromHeaders;
+    private readHeader;
+    private extractBearerToken;
+    private parseJwtPart;
+    private base64UrlToBuffer;
+    private safeCompare;
+    private toNumber;
+    private getPublicKeyFromJwks;
+    private selectJwkKey;
+    private pickFirstString;
+}

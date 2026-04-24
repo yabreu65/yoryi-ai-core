@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run governance contract tests
+        run: npm run test:contracts --workspace=@yoryi/ai-assistant-api
+
+      - name: Run tests - ai-core
+        run: npm run test --workspace=@yoryi/ai-core
+
+      - name: Run tests - ai-adapters
+        run: npm run test --workspace=@yoryi/ai-adapters
+
+      - name: Run tests - ai-assistant-api
+        run: npm run test --workspace=@yoryi/ai-assistant-api
+
+      - name: Build packages
+        run: |
+          npm run build --workspace=@yoryi/ai-types
+          npm run build --workspace=@yoryi/ai-core
+          npm run build --workspace=@yoryi/ai-adapters
+
+      - name: Build app
+        run: npm run build --workspace=@yoryi/ai-assistant-api

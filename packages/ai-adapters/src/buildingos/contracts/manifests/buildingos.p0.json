@@ -1,0 +1,53 @@
+{
+  "contractVersion": "2026-04-buildingos-p0-manifest-v1",
+  "defaults": {
+    "debtStatus": "OVERDUE",
+    "ranking": 5,
+    "requireBuildingWhenMultiBuilding": true,
+    "maxClarifications": 2
+  },
+  "routes": [
+    {
+      "intentCode": "GET_OVERDUE_UNITS",
+      "toolName": "search_payments",
+      "keywords": ["moroso", "morosos", "mora", "deuda", "vencida", "expensas", "impagas"],
+      "toolInput": {
+        "mode": "overdue_units",
+        "status": "OVERDUE"
+      }
+    },
+    {
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "toolName": "search_payments",
+      "keywords": ["pagos pendientes", "por aprobar", "submitted", "sin revisar", "pendientes"],
+      "toolInput": {
+        "mode": "pending_approvals",
+        "status": "SUBMITTED"
+      }
+    },
+    {
+      "intentCode": "GET_OPEN_TICKETS",
+      "toolName": "search_tickets",
+      "keywords": ["tickets", "reclamos", "incidencias", "abiertos", "en progreso", "backlog"],
+      "toolInput": {
+        "status": ["OPEN", "IN_PROGRESS"]
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_DEBT",
+      "toolName": "get_unit_balance",
+      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad"],
+      "toolInput": {
+        "debtStatus": "OVERDUE"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_PRIMARY_RESIDENT",
+      "toolName": "get_unit_profile",
+      "keywords": ["residente", "quien vive", "quién vive", "nombre del residente", "ocupante"],
+      "toolInput": {
+        "fields": ["occupants", "primaryResident", "building", "unit"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "yoryi-ai-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reusable intelligence layer for multi-tenant SaaS products",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "echo \"Define dev pipelines for apps and packages\"",
+    "build": "echo \"Define build pipelines for apps and packages\"",
+    "lint": "echo \"Define lint pipeline\"",
+    "test": "echo \"Define test pipeline\"",
+    "test:contracts": "npm run test:contracts --workspace=@yoryi/ai-assistant-api && npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p0-router.spec.ts",
+    "clean": "find . -name node_modules -type d -prune -exec rm -rf '{}' +"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

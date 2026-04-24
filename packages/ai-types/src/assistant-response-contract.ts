@@ -1,0 +1,74 @@
+export const ASSISTANT_RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+
+export type AssistantResponseSource = "live_data" | "fallback";
+
+export type AssistantResponseType =
+  | "metric"
+  | "list"
+  | "summary"
+  | "no_data"
+  | "clarification";
+
+export type AssistantDataScope = "tenant" | "self" | "module" | "unknown";
+
+export type AssistantResponseAction = {
+  key: string;
+  label: string;
+  description?: string;
+  requiresConfirmation?: boolean;
+  destructive?: boolean;
+  requiredPermission?: string;
+};
+
+export type AssistantResponseSchema = {
+  contractVersion: string;
+  answer: string;
+  answerSource: AssistantResponseSource;
+  responseType: AssistantResponseType;
+  dataScope: AssistantDataScope;
+  actions: AssistantResponseAction[];
+  metadata: Record<string, unknown>;
+};
+
+export function isAssistantResponseSchema(value: unknown): value is AssistantResponseSchema {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isNonEmptyString(value.contractVersion) &&
+    isNonEmptyString(value.answer) &&
+    (value.answerSource === "live_data" || value.answerSource === "fallback") &&
+    isResponseType(value.responseType) &&
+    isDataScope(value.dataScope) &&
+    Array.isArray(value.actions) &&
+    isRecord(value.metadata)
+  );
+}
+
+function isResponseType(value: unknown): value is AssistantResponseType {
+  return (
+    value === "metric" ||
+    value === "list" ||
+    value === "summary" ||
+    value === "no_data" ||
+    value === "clarification"
+  );
+}
+
+function isDataScope(value: unknown): value is AssistantDataScope {
+  return (
+    value === "tenant" ||
+    value === "self" ||
+    value === "module" ||
+    value === "unknown"
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
