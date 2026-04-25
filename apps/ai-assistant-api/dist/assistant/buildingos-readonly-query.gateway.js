@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpBuildingOSReadOnlyQueryGateway = void 0;
+const RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
 class HttpBuildingOSReadOnlyQueryGateway {
     baseUrl;
     timeoutMs;
@@ -26,10 +27,13 @@ class HttpBuildingOSReadOnlyQueryGateway {
         if (Date.now() < this.openUntilTs) {
             return null;
         }
-        const url = new URL(this.endpointPath, this.baseUrl);
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
         try {
+            const endpointPath = input.toolName
+                ? `/assistant/tools/${input.toolName}`
+                : this.endpointPath;
+            const url = new URL(endpointPath, this.baseUrl);
             const response = await fetch(url.toString(), {
                 method: "POST",
                 headers: this.buildHeadersForContext(input.context),
@@ -37,6 +41,8 @@ class HttpBuildingOSReadOnlyQueryGateway {
                     intentCode: input.intentCode,
                     contractVersion: "2026-04-readonly-v1",
                     question: input.question,
+                    responseContractVersion: RESPONSE_SCHEMA_VERSION,
+                    toolInput: input.toolInput,
                     context: {
                         appId: input.context.appId,
                         tenantId: input.context.tenantId,
@@ -65,12 +71,16 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 intent: input.intentCode,
                 intentCode: input.intentCode,
                 answerSource: "live_data",
+                toolName: input.toolName,
             };
             if (parsed.responseType) {
                 metadata.responseType = parsed.responseType;
             }
             if (parsed.dataScope) {
                 metadata.dataScope = parsed.dataScope;
+            }
+            if (parsed.contractVersion) {
+                metadata.contractVersion = parsed.contractVersion;
             }
             return {
                 answer: parsed.answer,
@@ -108,6 +118,17 @@ class HttpBuildingOSReadOnlyQueryGateway {
     parseGatewayResponse(payload) {
         if (!this.isRecord(payload)) {
             return null;
+        }
+        if (this.isSchemaPayload(payload)) {
+            return {
+                contractVersion: payload.contractVersion,
+                answer: payload.answer,
+                answerSource: payload.answerSource === "live_data" ? "live_data" : undefined,
+                responseType: payload.responseType,
+                dataScope: payload.dataScope,
+                actions: payload.actions,
+                metadata: payload.metadata,
+            };
         }
         const answer = this.asNonEmptyString(payload.answer);
         if (!answer) {
@@ -185,6 +206,23 @@ class HttpBuildingOSReadOnlyQueryGateway {
     }
     isRecord(value) {
         return typeof value === "object" && value !== null && !Array.isArray(value);
+    }
+    isSchemaPayload(value) {
+        if (!this.isRecord(value)) {
+            return false;
+        }
+        const answer = this.asNonEmptyString(value.answer);
+        const contractVersion = this.asNonEmptyString(value.contractVersion);
+        const answerSource = this.asNonEmptyString(value.answerSource);
+        const responseType = this.asNonEmptyString(value.responseType);
+        const dataScope = this.asNonEmptyString(value.dataScope);
+        return Boolean(answer &&
+            contractVersion &&
+            (answerSource === "live_data" || answerSource === "fallback") &&
+            responseType &&
+            dataScope &&
+            Array.isArray(value.actions) &&
+            this.isRecord(value.metadata));
     }
     registerSuccess() {
         this.consecutiveFailures = 0;

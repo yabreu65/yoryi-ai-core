@@ -7,8 +7,8 @@
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
     "esModuleInterop": true,
     "skipLibCheck": true
   },

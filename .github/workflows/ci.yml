@@ -49,6 +49,12 @@ jobs:
         run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p0-router.spec.ts
         continue-on-error: true
 
+      - name: Run P1 smoke tests - buildingos-p1-router
+        run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p1-router.spec.ts
+
+      - name: Run P2 smoke tests - buildingos-p2-router
+        run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p2-router.spec.ts
+
       - name: Run tests - ai-assistant-api
         run: npm run test --workspace=@yoryi/ai-assistant-api
 

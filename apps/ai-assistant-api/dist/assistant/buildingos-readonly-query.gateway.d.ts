@@ -26,6 +26,7 @@ export declare class HttpBuildingOSReadOnlyQueryGateway implements BuildingOSRea
     private parseMetadata;
     private asNonEmptyString;
     private isRecord;
+    private isSchemaPayload;
     private registerSuccess;
     private registerFailure;
 }

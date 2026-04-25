@@ -1,10 +1,35 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
 import type { BuildingOSCanonicalIntentCode } from "./buildingos-intent-registry";
+import type { BuildingOSReadOnlyQueryInput } from "./buildingos-readonly-query.gateway";
+
+function resolveManifestPath(filename: string): string {
+  const candidates = [
+    join(process.cwd(), 'packages/ai-adapters/src/buildingos/contracts/manifests', filename),
+    join(__dirname, 'contracts/manifests', filename),
+    join(process.cwd(), filename),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new Error(`Manifest not found: ${filename}`);
+}
+
+const PROJECT_ROOT_FIXED = resolveManifestPath('buildingos.p1.json');
+
+type BuildingOSP1IntentCode =
+  | BuildingOSCanonicalIntentCode
+  | "GET_REJECTED_TODAY"
+  | "GET_PAYMENTS_WITHOUT_PROOF"
+  | "GET_LAST_PAYMENT"
+  | "GET_DEBT_AGING"
+  | "GET_DEBT_BY_TOWER"
+  | "GET_UNIT_BALANCE_BY_PERIOD"
+  | "GET_URGENT_UNASSIGNED_TICKETS";
 
 export type BuildingOSP1Route = {
-  intentCode: BuildingOSCanonicalIntentCode;
-  toolName: string;
+  intentCode: BuildingOSP1IntentCode;
+  toolName: NonNullable<BuildingOSReadOnlyQueryInput["toolName"]>;
   toolInput: Record<string, unknown>;
   score: number;
 };
@@ -15,8 +40,8 @@ export type BuildingOSP1Clarification = {
 };
 
 type ManifestRoute = {
-  intentCode: BuildingOSCanonicalIntentCode;
-  toolName: string;
+  intentCode: BuildingOSP1IntentCode;
+  toolName: NonNullable<BuildingOSReadOnlyQueryInput["toolName"]>;
   keywords: string[];
   toolInput?: Record<string, unknown>;
 };
@@ -70,7 +95,7 @@ const FALLBACK_MANIFEST: ManifestFile = {
     {
       intentCode: "GET_DEBT_BY_TOWER",
       toolName: "analytics_debt_by_tower",
-      keywords: ["deuda por torre", "deuda por edificio", "cobranza por edificio"],
+      keywords: ["deuda por torre", "deuda por edificio", "cobranza por edificio", "ranking de deuda por torre", "ranking por torre", "top torres", "top edificios"],
       toolInput: { asOf: "{today}" },
     },
     {
@@ -82,7 +107,7 @@ const FALLBACK_MANIFEST: ManifestFile = {
     {
       intentCode: "GET_UNIT_BALANCE_BY_PERIOD",
       toolName: "get_unit_balance_by_period",
-      keywords: ["historial", "evolución", "serie histórica", "deuda por período"],
+      keywords: ["historial", "evolución", "serie histórica", "deuda por período", "saldo por período", "saldo por periodo", "balance por período"],
       toolInput: { periodsBack: 3, includeCurrent: false },
     },
     {
@@ -117,23 +142,20 @@ export class BuildingOSP1Router {
     return this.manifest.defaults;
   }
 
+  getManifestVersion(): string {
+    return this.manifest.contractVersion;
+  }
+
   route(question: string): BuildingOSP1Route | null {
     const normalized = normalize(question);
     if (!normalized) {
       return null;
     }
 
-    if (this.isUnitDebtWithoutReference(normalized)) {
-      return {
-        intentCode: "GET_OVERDUE_UNITS",
-        toolName: "search_payments",
-        toolInput: {
-          status: [this.manifest.defaults.debtStatus],
-          ranking: this.manifest.defaults.ranking,
-        },
-        score: 0.9,
-      };
-    }
+    console.log('[ROUTER-P1] Question:', question);
+    console.log('[ROUTER-P1] Normalized:', normalized);
+    console.log('[ROUTER-P1] Manifest version:', this.manifest.contractVersion);
+    console.log('[ROUTER-P1] Routes count:', this.manifest.routes.length);
 
     const ranked = this.manifest.routes
       .map((route) => ({
@@ -142,20 +164,82 @@ export class BuildingOSP1Router {
       }))
       .sort((a, b) => b.score - a.score);
 
+    console.log('[ROUTER-P1] Top 3 scores:', ranked.slice(0, 3).map(r => ({ intent: r.route.intentCode, score: r.score })));
+
     const best = ranked[0];
     if (!best || best.score <= 0) {
+      if (this.isUnitDebtWithoutReference(normalized)) {
+        return {
+          intentCode: "GET_OVERDUE_UNITS",
+          toolName: "search_payments",
+          toolInput: {
+            status: [this.manifest.defaults.debtStatus],
+            ranking: this.manifest.defaults.ranking,
+          },
+          score: 0.9,
+        };
+      }
       return null;
+    }
+
+    const tied = ranked.filter((r) => r.score === best.score);
+    if (tied.length > 1) {
+      const disambiguated = this.disambiguate(tied.map((t) => t.route), normalized);
+      if (disambiguated) {
+        const baseInput = { ...(disambiguated.toolInput ?? {}) };
+        if (baseInput.ranking === undefined) {
+          baseInput.ranking = this.manifest.defaults.ranking;
+        }
+        return {
+          intentCode: disambiguated.intentCode,
+          toolName: disambiguated.toolName,
+          toolInput: baseInput,
+          score: best.score,
+        };
+      }
+    }
+
+    const baseInput = { ...(best.route.toolInput ?? {}) };
+    if (baseInput.ranking === undefined) {
+      baseInput.ranking = this.manifest.defaults.ranking;
     }
 
     return {
       intentCode: best.route.intentCode,
       toolName: best.route.toolName,
-      toolInput: {
-        ...(best.route.toolInput ?? {}),
-        ranking: this.manifest.defaults.ranking,
-      },
+      toolInput: baseInput,
       score: Number(best.score.toFixed(2)),
     };
+  }
+
+  private disambiguate(
+    routes: ManifestRoute[],
+    normalized: string
+  ): ManifestRoute | null {
+    const agingScore =
+      normalized.includes("antiguedad") ||
+      normalized.includes("aging") ||
+      normalized.includes("dias");
+    const byTowerScore =
+      normalized.includes("torre") ||
+      normalized.includes("edificio") ||
+      normalized.includes("ranking");
+    const urgentScore =
+      normalized.includes("urgente") ||
+      normalized.includes("sin asignar") ||
+      normalized.includes("alta prioridad");
+    const balancePeriodScore =
+      (normalized.includes("saldo") || normalized.includes("balance")) &&
+      (normalized.includes("periodo") || normalized.includes("historial"));
+
+    for (const route of routes) {
+      if (route.intentCode === "GET_DEBT_AGING" && agingScore) return route;
+      if (route.intentCode === "GET_DEBT_BY_TOWER" && byTowerScore) return route;
+      if (route.intentCode === "GET_URGENT_UNASSIGNED_TICKETS" && urgentScore) return route;
+      if (route.intentCode === "GET_UNIT_BALANCE_BY_PERIOD" && balancePeriodScore) return route;
+    }
+
+    return null;
   }
 
   buildClarification(question: string): BuildingOSP1Clarification {
@@ -180,6 +264,45 @@ export class BuildingOSP1Router {
     };
   }
 
+  buildClarificationWithOptions(question: string): BuildingOSP1Clarification & {
+    fullOptions: Array<{
+      index: number;
+      label: string;
+      intentCode: string;
+      toolName: string;
+      toolInput: Record<string, unknown>;
+    }>;
+  } {
+    const normalized = normalize(question);
+    const ranked = this.manifest.routes
+      .map((route) => ({
+        route,
+        score: this.scoreRoute(route, normalized),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, this.manifest.defaults.maxClarifications);
+
+    const defaultToolInput = { ranking: this.manifest.defaults.ranking };
+
+    const fullOptions = ranked.map((item, index) => ({
+      index: index + 1,
+      label: this.labelForIntent(item.route.intentCode),
+      intentCode: item.route.intentCode,
+      toolName: item.route.toolName,
+      toolInput: { ...defaultToolInput, ...item.route.toolInput },
+    }));
+
+    const answer =
+      "Necesito una aclaracion para responder en modo operativo. Elegi una opcion:\n" +
+      fullOptions.map((opt) => `${opt.index}) ${opt.label}`).join("\n");
+
+    return {
+      answer,
+      options: fullOptions.map((opt) => ({ index: opt.index, label: opt.label })),
+      fullOptions,
+    };
+  }
+
   private scoreRoute(route: ManifestRoute, normalizedQuestion: string): number {
     let score = 0;
     for (const keyword of route.keywords) {
@@ -188,7 +311,7 @@ export class BuildingOSP1Router {
         continue;
       }
       if (normalizedQuestion.includes(normalizedKeyword)) {
-        score += 1;
+        score += 2;
       }
     }
 
@@ -209,7 +332,7 @@ export class BuildingOSP1Router {
     return mentionsDebt && !mentionsUnit;
   }
 
-  private labelForIntent(intentCode: BuildingOSCanonicalIntentCode): string {
+  private labelForIntent(intentCode: BuildingOSP1IntentCode): string {
     switch (intentCode) {
       case "GET_OVERDUE_UNITS":
         return "Ver unidades con deuda vencida";
@@ -246,12 +369,7 @@ export class BuildingOSP1Router {
 
   private loadManifest(): ManifestFile {
     try {
-      const manifestPath = join(
-        __dirname,
-        "contracts",
-        "manifests",
-        "buildingos.p1.json"
-      );
+      const manifestPath = join(dirname(PROJECT_ROOT_FIXED), 'buildingos.p1.json');
       const raw = readFileSync(manifestPath, "utf8");
       const parsed = JSON.parse(raw) as ManifestFile;
       if (!parsed.routes || !Array.isArray(parsed.routes) || parsed.routes.length === 0) {
@@ -261,6 +379,39 @@ export class BuildingOSP1Router {
     } catch {
       return FALLBACK_MANIFEST;
     }
+  }
+
+  isRankingQuery(normalized: string): boolean {
+    return (
+      normalized.includes("ranking") ||
+      normalized.includes("torre") ||
+      normalized.includes("edificio") ||
+      normalized.includes("deuda por")
+    );
+  }
+
+  routeForMultiBuilding(
+    question: string,
+    buildingId?: string
+  ): BuildingOSP1Route | BuildingOSP1Clarification | null {
+    const normalized = normalize(question);
+    if (!normalized) {
+      return null;
+    }
+
+    const isRanking = this.isRankingQuery(normalized);
+    const requiresBuilding = this.manifest.defaults.requireBuildingWhenMultiBuilding;
+
+    if (isRanking && requiresBuilding && !buildingId) {
+      const clarification = this.buildClarification(question);
+      return {
+        ...clarification,
+        answer:
+          "Para mostrar el ranking necesito saber el edificio. Indicá el nombre o número de torre/edificio:",
+      };
+    }
+
+    return this.route(question);
   }
 }
 
@@ -272,4 +423,16 @@ function normalize(value: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function tokenize(value: string): string[] {
+  return value.split(" ").filter(Boolean);
+}
+
+function stemEsToken(token: string): string {
+  let out = token;
+  if (out.endsWith("es") && out.length > 4) out = out.slice(0, -2);
+  else if (out.endsWith("s") && out.length > 3) out = out.slice(0, -1);
+  if (out.endsWith("a") && out.length > 4) out = `${out.slice(0, -1)}o`;
+  return out;
 }

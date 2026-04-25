@@ -55,6 +55,20 @@ describe("BuildingOSP1Router", () => {
     expect(result?.toolName).toBe("analytics_debt_by_tower");
   });
 
+  it("routes ranking de deuda por torre", () => {
+    const result = router.route("Ranking de deuda por torre");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
+    expect(result?.toolName).toBe("analytics_debt_by_tower");
+  });
+
+  it("routes balance by period question", () => {
+    const result = router.route("Saldo por período de la unidad");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_UNIT_BALANCE_BY_PERIOD");
+    expect(result?.toolName).toBe("get_unit_balance_by_period");
+  });
+
   it("routes urgent unassigned tickets to search_tickets", () => {
     const result = router.route("Tickets urgentes sin asignar");
     expect(result).not.toBeNull();
@@ -145,5 +159,114 @@ describe("BuildingOSP1Router - Contract Tests", () => {
     
     expect(result1?.intentCode).not.toBe(result2?.intentCode);
     expect(result1?.toolInput.status).not.toEqual(result2?.toolInput.status);
+  });
+});
+
+describe("BuildingOSP1Router - Smoke Tests", () => {
+  let router: BuildingOSP1Router;
+
+  beforeEach(() => {
+    router = new BuildingOSP1Router();
+  });
+
+  it("smoke: Saldo por período de la unidad 12-8 Torre A routes to GET_UNIT_BALANCE_BY_PERIOD", () => {
+    const result = router.route("Saldo por período de la unidad 12-8 Torre A");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_UNIT_BALANCE_BY_PERIOD");
+    expect(result?.toolName).toBe("get_unit_balance_by_period");
+    expect(result?.toolInput.periodsBack).toBe(3);
+    expect(result?.toolInput.includeCurrent).toBe(false);
+  });
+
+  it("smoke: Ranking deuda por torre (top 5) routes to GET_DEBT_BY_TOWER", () => {
+    const result = router.route("Ranking deuda por torre (top 5)");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
+    expect(result?.toolName).toBe("analytics_debt_by_tower");
+    expect(result?.toolInput.ranking).toBe(5);
+  });
+
+  it("smoke: Ranking deuda por torre sin número usa default", () => {
+    const result = router.route("Ranking deuda por torre");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
+    expect(result?.toolInput.ranking).toBe(5);
+  });
+
+  it("smoke: buildClarificationWithOptions returns full options with tool details", () => {
+    const result = router.buildClarificationWithOptions("estado general");
+    expect(result.options.length).toBeGreaterThan(0);
+    expect(result.fullOptions).toBeDefined();
+    expect(result.fullOptions[0]).toHaveProperty("intentCode");
+    expect(result.fullOptions[0]).toHaveProperty("toolName");
+    expect(result.fullOptions[0]).toHaveProperty("toolInput");
+  });
+
+  it("smoke: clarification with option resolution includes correct toolInput", () => {
+    const clarification = router.buildClarificationWithOptions("estado operativo");
+    const option1 = clarification.fullOptions.find(o => o.index === 1);
+    expect(option1).toBeDefined();
+    expect(option1?.intentCode).toBeDefined();
+    expect(option1?.toolName).toBeDefined();
+    expect(option1?.toolInput).toBeDefined();
+  });
+
+  it("smoke: no mode parameter in search_payments routes", () => {
+    const result = router.route("Pagos pendientes");
+    expect(result).not.toBeNull();
+    expect(result?.toolName).toBe("search_payments");
+    expect(result?.toolInput).not.toHaveProperty("mode");
+  });
+
+  it("smoke: P1 routes always produce operativelive_data or clarification, never knowledge", () => {
+    const result = router.route("Pagos pendientes");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBeDefined();
+    expect(result?.toolName).toBeDefined();
+  });
+
+  it("smoke: clarification response must not claim knowledge source", () => {
+    const clarification = router.buildClarification("estado general");
+    expect(clarification.answer).not.toContain("knowledge");
+    expect(clarification.answer).toContain("Necesito");
+  });
+
+  it("smoke: no intents by filter - rejected vs pending are different", () => {
+    const rejected = router.route("Pagos rechazados hoy");
+    const pending = router.route("Pagos pendientes");
+    expect(rejected?.intentCode).not.toBe(pending?.intentCode);
+    expect(rejected?.toolInput.status).not.toEqual(pending?.toolInput.status);
+  });
+
+  it("smoke: maxClarifications is 2 from defaults", () => {
+    const defaults = router.getDefaults();
+    expect(defaults.maxClarifications).toBe(2);
+  });
+});
+
+describe("BuildingOSP1Router - Multi-Building Disambiguation", () => {
+  let router: BuildingOSP1Router;
+
+  beforeEach(() => {
+    router = new BuildingOSP1Router();
+  });
+
+  it("ranking without buildingId returns clarification asking for building", () => {
+    const result = router.routeForMultiBuilding("Ranking deuda por torre", undefined);
+    expect(result).not.toBeNull();
+    expect(result?.answer).toContain("edificio");
+  });
+
+  it("ranking with buildingId returns direct route", () => {
+    const result = router.routeForMultiBuilding("Ranking deuda por torre", "building-123");
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
+    expect(result?.toolName).toBe("analytics_debt_by_tower");
+  });
+
+  it("non-ranking query ignores multiBuilding setting", () => {
+    const result = router.routeForMultiBuilding("Pagos pendientes", undefined);
+    expect(result).not.toBeNull();
+    expect(result?.intentCode).toBe("GET_PENDING_PAYMENTS");
   });
 });

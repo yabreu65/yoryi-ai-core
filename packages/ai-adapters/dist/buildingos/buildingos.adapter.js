@@ -2,7 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BuildingOSAdapter = void 0;
 const buildingos_intent_classifier_1 = require("./buildingos-intent-classifier");
+const buildingos_p0_router_1 = require("./buildingos-p0-router");
+const buildingos_p1_router_1 = require("./buildingos-p1-router");
 const buildingos_intent_registry_1 = require("./buildingos-intent-registry");
+function generateTraceId() {
+    return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
 const BUILDINGOS_ACTION_REGISTRY = {
     "open-buildings": {
         execution: { type: "navigate", targetPath: "/tenant/buildings" },
@@ -124,9 +129,77 @@ class BuildingOSAdapter {
     financialGateway;
     readOnlyQueryGateway;
     readOnlyIntentClassifier = new buildingos_intent_classifier_1.BuildingOSIntentClassifier();
+    p0Router = new buildingos_p0_router_1.BuildingOSP0Router();
+    p1Router = new buildingos_p1_router_1.BuildingOSP1Router();
+    pendingClarifications = new Map();
+    static CLARIFICATION_TTL_MS = 5 * 60 * 1000;
     constructor(options = {}) {
         this.financialGateway = options.financialGateway;
         this.readOnlyQueryGateway = options.readOnlyQueryGateway;
+    }
+    getSessionId(context) {
+        return typeof context.extra?.sessionId === "string" ? context.extra.sessionId : undefined;
+    }
+    buildClarificationKey(context, sessionId) {
+        const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+        return `${context.appId}:${context.tenantId ?? "no-tenant"}:${context.userId}:${effectiveSessionId}`;
+    }
+    savePendingClarification(context, pending, sessionId) {
+        const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+        const key = this.buildClarificationKey(context, effectiveSessionId);
+        this.pendingClarifications.set(key, { ...pending, timestamp: Date.now(), sessionId: effectiveSessionId });
+    }
+    getAndValidatePendingClarification(context, sessionId) {
+        const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+        const key = this.buildClarificationKey(context, effectiveSessionId);
+        const pending = this.pendingClarifications.get(key);
+        if (!pending)
+            return null;
+        if (Date.now() - pending.timestamp > BuildingOSAdapter.CLARIFICATION_TTL_MS) {
+            this.pendingClarifications.delete(key);
+            return null;
+        }
+        return pending;
+    }
+    resolveNumericOption(context, question, sessionId) {
+        const normalized = question.trim();
+        const numberMatch = normalized.match(/^(\d+)$/);
+        if (!numberMatch)
+            return null;
+        const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+        const pending = this.getAndValidatePendingClarification(context, effectiveSessionId);
+        if (!pending)
+            return "already_executed";
+        const selectedIndex = parseInt(numberMatch[1] ?? "0", 10);
+        const selectedOption = pending.options.find(opt => opt.index === selectedIndex);
+        if (!selectedOption)
+            return "invalid_option";
+        return {
+            ...pending,
+            intentCode: selectedOption.intentCode,
+            toolName: selectedOption.toolName,
+            toolInput: selectedOption.toolInput,
+            options: pending.options,
+            clarificationOptionChosen: selectedIndex,
+        };
+    }
+    buildObservabilityMetadata(intentCode, answerSource, options) {
+        const base = {
+            intentCode,
+            answerSource,
+            manifestVersion: this.p1Router.getManifestVersion(),
+        };
+        if (options?.traceId)
+            base.traceId = options.traceId;
+        if (options?.gatewayOutcome)
+            base.gatewayOutcome = options.gatewayOutcome;
+        if (options?.latencyMsTotal)
+            base.latencyMsTotal = options.latencyMsTotal;
+        if (options?.clarificationOptionChosen)
+            base.clarificationOptionChosen = options.clarificationOptionChosen;
+        if (options?.followUpExecuted)
+            base.followUpExecuted = options.followUpExecuted;
+        return base;
     }
     async getModules() {
         return [
@@ -277,6 +350,168 @@ class BuildingOSAdapter {
         }
         if (!this.readOnlyQueryGateway) {
             return null;
+        }
+        const pendingFollowUp = this.resolveNumericOption(context, question);
+        if (pendingFollowUp === "invalid_option") {
+            return {
+                answer: "La opción ingresada no es válida. Elegí 1 o 2.",
+                actions: [],
+                metadata: this.buildObservabilityMetadata("UNKNOWN", "live_data", { gatewayOutcome: "denied" }),
+            };
+        }
+        if (pendingFollowUp === "already_executed") {
+            return {
+                answer: "La clarificación ya fue ejecutada o expiró. Si necesitás otra consulta, hacela de nuevo.",
+                actions: [],
+                metadata: this.buildObservabilityMetadata("UNKNOWN", "live_data", { gatewayOutcome: "unavailable" }),
+            };
+        }
+        if (pendingFollowUp && typeof pendingFollowUp === "object" && "intentCode" in pendingFollowUp) {
+            const traceId = generateTraceId();
+            const startedAt = Date.now();
+            console.log("[ROUTER] P1 follow-up:", pendingFollowUp.intentCode, pendingFollowUp.toolName);
+            if (this.canRunReadOnlyIntent(pendingFollowUp.intentCode, context)) {
+                try {
+                    const result = await this.readOnlyQueryGateway.query({
+                        intentCode: pendingFollowUp.intentCode,
+                        question,
+                        context,
+                        toolName: pendingFollowUp.toolName,
+                        toolInput: pendingFollowUp.toolInput,
+                    });
+                    this.pendingClarifications.delete(this.buildClarificationKey(context));
+                    if (result) {
+                        return {
+                            answer: result.answer,
+                            actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(pendingFollowUp.intentCode),
+                            metadata: this.buildObservabilityMetadata(pendingFollowUp.intentCode, "live_data", {
+                                traceId,
+                                gatewayOutcome: "success",
+                                latencyMsTotal: Date.now() - startedAt,
+                                clarificationOptionChosen: pendingFollowUp.clarificationOptionChosen,
+                                followUpExecuted: true,
+                            }),
+                        };
+                    }
+                }
+                catch {
+                    // Fall through to normal routing on follow-up error
+                }
+            }
+        }
+        const p1Route = this.p1Router.route(question);
+        if (p1Route) {
+            console.log("[ROUTER] P1 matched:", p1Route.intentCode, p1Route.toolName);
+            const intentCode = p1Route.intentCode;
+            if (this.canRunReadOnlyIntent(intentCode, context)) {
+                try {
+                    const result = await this.readOnlyQueryGateway.query({
+                        intentCode: intentCode,
+                        question,
+                        context,
+                        toolName: p1Route.toolName,
+                        toolInput: p1Route.toolInput,
+                    });
+                    if (result) {
+                        const traceId = generateTraceId();
+                        const startedAt = Date.now();
+                        return {
+                            answer: result.answer,
+                            actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(intentCode),
+                            metadata: this.buildObservabilityMetadata(intentCode, "live_data", { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt }),
+                        };
+                    }
+                    this.savePendingClarification(context, {
+                        intentCode,
+                        toolName: p1Route.toolName,
+                        toolInput: p1Route.toolInput,
+                        options: this.p1Router.buildClarificationWithOptions(question).fullOptions,
+                    });
+                    const clarification = this.p1Router.buildClarification(question);
+                    return {
+                        answer: clarification.answer,
+                        actions: [],
+                        metadata: this.buildObservabilityMetadata(intentCode, "live_data", { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }),
+                    };
+                }
+                catch {
+                    this.savePendingClarification(context, {
+                        intentCode,
+                        toolName: p1Route.toolName,
+                        toolInput: p1Route.toolInput,
+                        options: this.p1Router.buildClarificationWithOptions(question).fullOptions,
+                    });
+                    const clarification = this.p1Router.buildClarification(question);
+                    return {
+                        answer: clarification.answer,
+                        actions: [],
+                        metadata: this.buildObservabilityMetadata(intentCode, "live_data", { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }),
+                    };
+                }
+            }
+            else {
+                return {
+                    answer: "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
+                    actions: [],
+                    metadata: this.buildObservabilityMetadata(intentCode, "live_data", { gatewayOutcome: "denied", responseType: "clarification", authorizationDenied: true }),
+                };
+            }
+        }
+        const p0Route = this.p0Router.route(question);
+        if (p0Route) {
+            if (!this.canRunReadOnlyIntent(p0Route.intentCode, context)) {
+                return {
+                    answer: "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
+                    actions: [],
+                    metadata: {
+                        responseType: "clarification",
+                        intent: p0Route.intentCode,
+                        intentCode: p0Route.intentCode,
+                        answerSource: "live_data",
+                        authorizationDenied: true,
+                    },
+                };
+            }
+            try {
+                const result = await this.readOnlyQueryGateway.query({
+                    intentCode: p0Route.intentCode,
+                    question,
+                    context,
+                    toolName: p0Route.toolName,
+                    toolInput: p0Route.toolInput,
+                });
+                if (result) {
+                    return {
+                        answer: result.answer,
+                        actions: result.actions && result.actions.length > 0
+                            ? result.actions
+                            : this.getDefaultReadOnlyActions(p0Route.intentCode),
+                        metadata: {
+                            ...result.metadata,
+                            intent: p0Route.intentCode,
+                            intentCode: p0Route.intentCode,
+                            intentScore: p0Route.score,
+                            p0Routed: true,
+                            answerSource: "live_data",
+                        },
+                    };
+                }
+            }
+            catch {
+                // Continue with controlled clarification fallback below.
+            }
+            const clarification = this.p0Router.buildClarification(question);
+            return {
+                answer: clarification.answer,
+                actions: [],
+                metadata: {
+                    responseType: "clarification",
+                    answerSource: "live_data",
+                    clarificationOptions: clarification.options,
+                    p0Routed: true,
+                    gatewayUnavailable: true,
+                },
+            };
         }
         const classification = this.readOnlyIntentClassifier.classify(question);
         if (!classification.intentCode) {
@@ -703,6 +938,22 @@ class BuildingOSAdapter {
                 return requires("charges.read");
             case "GET_UNIT_DEBT":
                 return requires("charges.read", "units.read");
+            case "GET_UNIT_PRIMARY_RESIDENT":
+                return requires("units.read");
+            case "GET_REJECTED_TODAY":
+                return requires("payments.read");
+            case "GET_PAYMENTS_WITHOUT_PROOF":
+                return requires("payments.read");
+            case "GET_LAST_PAYMENT":
+                return requires("payments.read");
+            case "GET_DEBT_AGING":
+                return requires("charges.read");
+            case "GET_DEBT_BY_TOWER":
+                return requires("charges.read");
+            case "GET_UNIT_BALANCE_BY_PERIOD":
+                return requires("charges.read", "units.read");
+            case "GET_URGENT_UNASSIGNED_TICKETS":
+                return requires("tickets.read");
             default:
                 return false;
         }
@@ -759,6 +1010,13 @@ class BuildingOSAdapter {
                     key: "open-charges",
                     label: "Open Charges",
                     description: "Navigate to the Charges module",
+                },
+            ],
+            GET_UNIT_PRIMARY_RESIDENT: [
+                {
+                    key: "open-units",
+                    label: "Open Units",
+                    description: "Navigate to the Units module",
                 },
             ],
         };

@@ -19,4 +19,7 @@ __exportStar(require("./buildingos/buildingos-financial.gateway"), exports);
 __exportStar(require("./buildingos/buildingos-readonly-query.gateway"), exports);
 __exportStar(require("./buildingos/buildingos-intent-registry"), exports);
 __exportStar(require("./buildingos/buildingos-intent-classifier"), exports);
+__exportStar(require("./buildingos/buildingos-p0-router"), exports);
+__exportStar(require("./buildingos/buildingos-p1-router"), exports);
+__exportStar(require("./buildingos/buildingos-p2-router"), exports);
 __exportStar(require("./jurismanager/jurismanager.adapter"), exports);

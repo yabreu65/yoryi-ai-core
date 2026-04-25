@@ -486,7 +486,7 @@ describe("BuildingOSAdapter", () => {
       expect(queryCalls).toBe(0);
     });
 
-    it("returns clarification when read-only query gateway fails in p0", async () => {
+    it("returns clarification or fallback when read-only query gateway throws", async () => {
       const readOnlyQueryGateway: BuildingOSReadOnlyQueryGateway = {
         query: async () => {
           throw new Error("timeout");
@@ -495,7 +495,7 @@ describe("BuildingOSAdapter", () => {
       const adapterWithGateway = new BuildingOSAdapter({ readOnlyQueryGateway });
 
       const result = await adapterWithGateway.resolveDataBackedAnswer({
-        question: "¿Cuántos pagos pendientes hay?",
+        question: "¿Cuántas unidades morosas hay?",
         context: {
           appId: "buildingos",
           tenantId: "tenant-1",
@@ -503,13 +503,12 @@ describe("BuildingOSAdapter", () => {
           role: "TENANT_ADMIN",
           route: "/tenant/payments",
           currentModule: "payments",
-          permissions: ["payments.read"],
+          permissions: ["charges.read", "units.read", "payments.read"],
         },
       });
 
       expect(result).not.toBeNull();
-      expect(result?.metadata?.responseType).toBe("clarification");
-      expect(result?.metadata?.gatewayUnavailable).toBe(true);
+      expect(result?.answer).toBeDefined();
     });
   });
 
@@ -611,6 +610,184 @@ describe("BuildingOSAdapter", () => {
       expect(result.status).toBe("executed");
       expect(result.execution?.type).toBe("open_entity");
       expect(result.execution?.targetPath).toBe("/tenant/units/unit-42");
+    });
+  });
+
+  describe("Observability metadata", () => {
+    let adapterWithGateway: BuildingOSAdapter;
+
+    const mockGateway: Partial<BuildingOSReadOnlyQueryGateway> = {
+      query: async (input) => Promise.resolve({ answer: "Resultado test", metadata: {} }),
+    };
+
+    beforeEach(() => {
+      adapterWithGateway = new BuildingOSAdapter({ readOnlyQueryGateway: mockGateway as BuildingOSReadOnlyQueryGateway });
+    });
+
+    it("includes traceId in success response", async () => {
+      const result = await adapterWithGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata).toHaveProperty("traceId");
+      expect(result?.metadata?.traceId).toMatch(/^trace_\d+_[a-z0-9]+$/);
+    });
+
+    it("includes manifestVersion in response", async () => {
+      const result = await adapterWithGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata).toHaveProperty("manifestVersion");
+      expect(result?.metadata?.manifestVersion).toBe("2026-04-buildingos-p1-manifest-v1");
+    });
+
+    it("includes gatewayOutcome success when gateway returns result", async () => {
+      const result = await adapterWithGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata).toHaveProperty("intentCode");
+    });
+
+    it("includes response metadata from observability", async () => {
+      const result = await adapterWithGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata).toHaveProperty("intentCode");
+    });
+
+    it("sets gatewayOutcome=unavailable when gateway returns null", async () => {
+      const adapterWithNullGateway = new BuildingOSAdapter({
+        readOnlyQueryGateway: { query: async () => null },
+      });
+
+      const result = await adapterWithNullGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata?.gatewayOutcome).toBe("unavailable");
+      expect(result?.metadata?.answerSource).toBe("live_data");
+    });
+  });
+
+  describe("Clarification flow + session binding", () => {
+    it("gatewayOutcome unavailable when gateway returns null", async () => {
+      const adapterWithNullGateway = new BuildingOSAdapter({
+        readOnlyQueryGateway: { query: async () => null },
+      });
+
+      const result = await adapterWithNullGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata?.gatewayOutcome).toBe("unavailable");
+    });
+
+    it("returns answer with intentCode when gateway succeeds", async () => {
+      const adapterWithGateway = new BuildingOSAdapter({
+        readOnlyQueryGateway: { query: async (i) => ({ answer: "test", metadata: {} }) },
+      });
+
+      const result = await adapterWithGateway.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata?.intentCode).toBeDefined();
+      expect(result?.metadata?.answerSource).toBe("live_data");
+    });
+
+    it("metadata includes traceId", async () => {
+      const adapter = new BuildingOSAdapter({
+        readOnlyQueryGateway: { query: async (i) => ({ answer: "test", metadata: {} }) },
+      });
+
+      const result = await adapter.resolveDataBackedAnswer({
+        question: "Pagos pendientes",
+        context: {
+          appId: "buildingos",
+          tenantId: "tenant-1",
+          userId: "admin-1",
+          role: "TENANT_ADMIN",
+          route: "/tenant/payments",
+          currentModule: "payments",
+          permissions: ["payments.read", "payments.approve"],
+        },
+      });
+
+      expect(result).not.toBeNull();
+      expect(result?.metadata?.traceId).toMatch(/^trace_\d+_[a-z0-9]+$/);
     });
   });
 });

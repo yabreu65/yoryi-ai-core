@@ -1,0 +1,102 @@
+{
+  "contractVersion": "2026-05-buildingos-p2-manifest-v1",
+  "defaults": {
+    "months": 6,
+    "maxMonths": 24,
+    "requireBuildingWhenMultiBuilding": true,
+    "maxClarifications": 2,
+    "metric": "outstanding",
+    "metrics": ["outstanding", "overdue", "charged", "collected", "collection_rate"],
+    "ranking": 5
+  },
+  "routes": [
+    {
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["tendencia deuda", "evolución deuda", "historial deuda", "deuda por mes", "tendencia mensual", "tendencia unitaria", "deuda unidad", "deuda por unidad"],
+      "toolInput": {
+        "months": 6,
+        "metric": "outstanding"
+      }
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "toolName": "get_building_debt_trend",
+      "keywords": ["torre", "edificio", "deuda torre", "deuda por torre", "tendencia torre", "tendencia edificio", "deuda building", "ranking"],
+      "toolInput": {
+        "months": 6,
+        "metric": "outstanding"
+      }
+    },
+    {
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "toolName": "get_collections_trend",
+      "keywords": ["cobros", "recaudación", "cobranza", "tendencia cobros", "cobros por mes", "evolución cobros", "recaudación por mes", "porcentaje cobrabilidad", "tasa de cobro"],
+      "toolInput": {
+        "months": 6
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["tendencia vencida", "deuda vencida", "mora unitaria", "vencida por mes", "evolución mora"],
+      "toolInput": {
+        "months": 6,
+        "metric": "overdue"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_CHARGED_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["cargos", "expensas generadas", "total cargos", "tendencia cargos"],
+      "toolInput": {
+        "months": 6,
+        "metric": "charged"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["pagos unitarios", "cobros unidad", "cobrado unidad"],
+      "toolInput": {
+        "months": 6,
+        "metric": "collected"
+      }
+    },
+    {
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "toolName": "get_building_debt_trend",
+      "keywords": ["mora edificio", "vencida torre"],
+      "toolInput": {
+        "months": 6,
+        "metric": "overdue"
+      }
+    },
+    {
+      "intentCode": "GET_COLLECTION_RATE_TREND",
+      "toolName": "get_collections_trend",
+      "keywords": ["porcentaje cobrabilidad", "tasa de cobro", "collection rate", "ratio de cobranza", "efectividad de cobro"],
+      "toolInput": {
+        "months": 6
+      }
+    },
+    {
+      "intentCode": "GET_12MONTH_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["último año", "ultimo año", "12 meses", "año completo"],
+      "toolInput": {
+        "months": 12,
+        "metric": "outstanding"
+      }
+    },
+    {
+      "intentCode": "GET_BUILDING_TREND_LAST_YEAR",
+      "toolName": "get_building_debt_trend",
+      "keywords": ["deuda año", "tendencia anual edificio"],
+      "toolInput": {
+        "months": 12,
+        "metric": "outstanding"
+      }
+    }
+  ]
+}

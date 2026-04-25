@@ -18,6 +18,7 @@ import type {
 } from "./buildingos-readonly-query.gateway";
 import { BuildingOSIntentClassifier } from "./buildingos-intent-classifier";
 import { BuildingOSP0Router } from "./buildingos-p0-router";
+import { BuildingOSP1Router } from "./buildingos-p1-router";
 import {
   type BuildingOSCanonicalIntentCode,
   getBuildingOSIntentDefinition,
@@ -26,6 +27,28 @@ import {
 export type BuildingOSAdapterOptions = {
   financialGateway?: BuildingOSFinancialGateway;
   readOnlyQueryGateway?: BuildingOSReadOnlyQueryGateway;
+};
+
+type GatewayOutcome = "success" | "denied" | "unavailable" | "timeout" | "contract_mismatch" | "invalid_payload";
+
+function generateTraceId(): string {
+  return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+type PendingClarification = {
+  intentCode: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  timestamp: number;
+  sessionId?: string;
+  clarificationOptionChosen?: number;
+  options: Array<{
+    index: number;
+    label: string;
+    intentCode: string;
+    toolName: string;
+    toolInput: Record<string, unknown>;
+  }>;
 };
 
 type BuildingOSActionRegistryEntry = {
@@ -162,10 +185,96 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
   private readonly readOnlyQueryGateway!: BuildingOSReadOnlyQueryGateway | undefined;
   private readonly readOnlyIntentClassifier = new BuildingOSIntentClassifier();
   private readonly p0Router = new BuildingOSP0Router();
+  private readonly p1Router = new BuildingOSP1Router();
+
+  private readonly pendingClarifications = new Map<string, PendingClarification>();
+  private static readonly CLARIFICATION_TTL_MS = 5 * 60 * 1000;
 
   constructor(options: BuildingOSAdapterOptions = {}) {
     this.financialGateway = options.financialGateway;
     this.readOnlyQueryGateway = options.readOnlyQueryGateway;
+  }
+
+  private getSessionId(context: ResolvedAssistantContext): string | undefined {
+    return typeof context.extra?.sessionId === "string" ? context.extra.sessionId : undefined;
+  }
+
+  private buildClarificationKey(context: ResolvedAssistantContext, sessionId?: string): string {
+    const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+    return `${context.appId}:${context.tenantId ?? "no-tenant"}:${context.userId}:${effectiveSessionId}`;
+  }
+
+  private savePendingClarification(
+    context: ResolvedAssistantContext,
+    pending: Omit<PendingClarification, "timestamp" | "sessionId">,
+    sessionId?: string
+  ): void {
+    const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+    const key = this.buildClarificationKey(context, effectiveSessionId);
+    this.pendingClarifications.set(key, { ...pending, timestamp: Date.now(), sessionId: effectiveSessionId });
+  }
+
+private getAndValidatePendingClarification(
+    context: ResolvedAssistantContext,
+    sessionId?: string
+  ): PendingClarification | null {
+    const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+    const key = this.buildClarificationKey(context, effectiveSessionId);
+    const pending = this.pendingClarifications.get(key);
+    if (!pending) return null;
+    if (Date.now() - pending.timestamp > BuildingOSAdapter.CLARIFICATION_TTL_MS) {
+      this.pendingClarifications.delete(key);
+      return null;
+    }
+    return pending;
+  }
+
+  private resolveNumericOption(
+    context: ResolvedAssistantContext,
+    question: string,
+    sessionId?: string
+  ): PendingClarification | "invalid_option" | "already_executed" | null {
+    const normalized = question.trim();
+    const numberMatch = normalized.match(/^(\d+)$/);
+    if (!numberMatch) return null;
+    const effectiveSessionId = sessionId ?? this.getSessionId(context) ?? "default";
+    const pending = this.getAndValidatePendingClarification(context, effectiveSessionId);
+    if (!pending) return "already_executed";
+    const selectedIndex = parseInt(numberMatch[1] ?? "0", 10);
+    const selectedOption = pending.options.find(opt => opt.index === selectedIndex);
+    if (!selectedOption) return "invalid_option";
+    return {
+      ...pending,
+      intentCode: selectedOption.intentCode,
+      toolName: selectedOption.toolName,
+      toolInput: selectedOption.toolInput,
+      options: pending.options,
+      clarificationOptionChosen: selectedIndex,
+    };
+  }
+
+  private buildObservabilityMetadata(
+    intentCode: string,
+    answerSource: string,
+    options?: {
+      traceId?: string;
+      gatewayOutcome?: GatewayOutcome;
+      latencyMsTotal?: number;
+      clarificationOptionChosen?: number;
+      followUpExecuted?: boolean;
+    }
+  ): Record<string, unknown> {
+    const base: Record<string, unknown> = {
+      intentCode,
+      answerSource,
+      manifestVersion: this.p1Router.getManifestVersion(),
+    };
+    if (options?.traceId) base.traceId = options.traceId;
+    if (options?.gatewayOutcome) base.gatewayOutcome = options.gatewayOutcome;
+    if (options?.latencyMsTotal) base.latencyMsTotal = options.latencyMsTotal;
+    if (options?.clarificationOptionChosen) base.clarificationOptionChosen = options.clarificationOptionChosen;
+    if (options?.followUpExecuted) base.followUpExecuted = options.followUpExecuted;
+    return base;
   }
 
   async getModules(): Promise<AppModuleDefinition[]> {
@@ -345,6 +454,139 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
 
     if (!this.readOnlyQueryGateway) {
       return null;
+    }
+
+    const pendingFollowUp = this.resolveNumericOption(context, question);
+    if (pendingFollowUp === "invalid_option") {
+      return {
+        answer: "La opción ingresada no es válida. Elegí 1 o 2.",
+        actions: [],
+        metadata: this.buildObservabilityMetadata(
+          "UNKNOWN",
+          "live_data",
+          { gatewayOutcome: "denied" }
+        ),
+      };
+    }
+    if (pendingFollowUp === "already_executed") {
+      return {
+        answer: "La clarificación ya fue ejecutada o expiró. Si necesitás otra consulta, hacela de nuevo.",
+        actions: [],
+        metadata: this.buildObservabilityMetadata(
+          "UNKNOWN",
+          "live_data",
+          { gatewayOutcome: "unavailable" }
+        ),
+      };
+    }
+    if (pendingFollowUp && typeof pendingFollowUp === "object" && "intentCode" in pendingFollowUp) {
+      const traceId = generateTraceId();
+      const startedAt = Date.now();
+      console.log("[ROUTER] P1 follow-up:", pendingFollowUp.intentCode, pendingFollowUp.toolName);
+      if (this.canRunReadOnlyIntent(pendingFollowUp.intentCode as BuildingOSCanonicalIntentCode, context)) {
+        try {
+          const result = await this.readOnlyQueryGateway.query({
+            intentCode: pendingFollowUp.intentCode as BuildingOSCanonicalIntentCode,
+            question,
+            context,
+            toolName: pendingFollowUp.toolName as any,
+            toolInput: pendingFollowUp.toolInput,
+          });
+          this.pendingClarifications.delete(this.buildClarificationKey(context));
+          if (result) {
+            return {
+              answer: result.answer,
+              actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(pendingFollowUp.intentCode as BuildingOSCanonicalIntentCode),
+              metadata: this.buildObservabilityMetadata(
+                pendingFollowUp.intentCode,
+                "live_data",
+                {
+                  traceId,
+                  gatewayOutcome: "success",
+                  latencyMsTotal: Date.now() - startedAt,
+                  clarificationOptionChosen: pendingFollowUp.clarificationOptionChosen,
+                  followUpExecuted: true,
+                }
+              ),
+            };
+          }
+        } catch {
+          // Fall through to normal routing on follow-up error
+        }
+      }
+    }
+
+    const p1Route = this.p1Router.route(question);
+    if (p1Route) {
+      console.log("[ROUTER] P1 matched:", p1Route.intentCode, p1Route.toolName);
+      const intentCode = p1Route.intentCode;
+      if (this.canRunReadOnlyIntent(intentCode as BuildingOSCanonicalIntentCode, context)) {
+        try {
+          const result = await this.readOnlyQueryGateway.query({
+            intentCode: intentCode as BuildingOSCanonicalIntentCode,
+            question,
+            context,
+            toolName: p1Route.toolName as any,
+            toolInput: p1Route.toolInput,
+          });
+          if (result) {
+            const traceId = generateTraceId();
+            const startedAt = Date.now();
+            return {
+              answer: result.answer,
+              actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(intentCode as BuildingOSCanonicalIntentCode),
+              metadata: this.buildObservabilityMetadata(
+                intentCode,
+                "live_data",
+                { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt }
+              ),
+            };
+          }
+          this.savePendingClarification(context, {
+            intentCode,
+            toolName: p1Route.toolName,
+            toolInput: p1Route.toolInput,
+            options: this.p1Router.buildClarificationWithOptions(question).fullOptions,
+          });
+          const clarification = this.p1Router.buildClarification(question);
+          return {
+            answer: clarification.answer,
+            actions: [],
+            metadata: this.buildObservabilityMetadata(
+              intentCode,
+              "live_data",
+              { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }
+            ),
+          };
+        } catch {
+          this.savePendingClarification(context, {
+            intentCode,
+            toolName: p1Route.toolName,
+            toolInput: p1Route.toolInput,
+            options: this.p1Router.buildClarificationWithOptions(question).fullOptions,
+          });
+          const clarification = this.p1Router.buildClarification(question);
+          return {
+            answer: clarification.answer,
+            actions: [],
+            metadata: this.buildObservabilityMetadata(
+              intentCode,
+              "live_data",
+              { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }
+            ),
+          };
+        }
+      } else {
+        return {
+          answer: "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
+          actions: [],
+          metadata: this.buildObservabilityMetadata(
+            intentCode,
+            "live_data",
+            { gatewayOutcome: "denied", responseType: "clarification", authorizationDenied: true }
+          ),
+        };
+      }
     }
 
     const p0Route = this.p0Router.route(question);
@@ -917,6 +1159,20 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
         return requires("charges.read", "units.read");
       case "GET_UNIT_PRIMARY_RESIDENT":
         return requires("units.read");
+      case "GET_REJECTED_TODAY":
+        return requires("payments.read");
+      case "GET_PAYMENTS_WITHOUT_PROOF":
+        return requires("payments.read");
+      case "GET_LAST_PAYMENT":
+        return requires("payments.read");
+      case "GET_DEBT_AGING":
+        return requires("charges.read");
+      case "GET_DEBT_BY_TOWER":
+        return requires("charges.read");
+      case "GET_UNIT_BALANCE_BY_PERIOD":
+        return requires("charges.read", "units.read");
+      case "GET_URGENT_UNASSIGNED_TICKETS":
+        return requires("tickets.read");
       default:
         return false;
     }
@@ -925,7 +1181,7 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
   private getDefaultReadOnlyActions(
     intentCode: BuildingOSCanonicalIntentCode
   ): ActionDefinition[] {
-    const intentActions: Record<BuildingOSCanonicalIntentCode, ActionDefinition[]> = {
+    const intentActions: Partial<Record<BuildingOSCanonicalIntentCode, ActionDefinition[]>> = {
       GET_OVERDUE_UNITS: [
         {
           key: "open-charges",

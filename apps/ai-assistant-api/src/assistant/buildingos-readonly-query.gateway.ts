@@ -6,6 +6,10 @@ import type {
   BuildingOSReadOnlyQueryGateway,
   BuildingOSReadOnlyQueryInput,
 } from "@yoryi/ai-adapters";
+import {
+  ASSISTANT_RESPONSE_SCHEMA_VERSION,
+  ASSISTANT_RESPONSE_SCHEMA_VERSION_V2,
+} from "@yoryi/ai-types";
 
 type HttpReadOnlyQueryGatewayOptions = {
   baseUrl?: string;
@@ -19,7 +23,7 @@ type HttpReadOnlyQueryGatewayOptions = {
 type ReadOnlyGatewayResponse = {
   contractVersion?: string;
   answer: string;
-  answerSource?: "live_data";
+  answerSource?: "live_data" | "snapshot" | "clarification";
   responseType?: "metric" | "list" | "summary" | "no_data" | "clarification";
   dataScope?: "tenant" | "self" | "module" | "unknown";
   actions?: ActionDefinition[];
@@ -27,6 +31,15 @@ type ReadOnlyGatewayResponse = {
 };
 
 const RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+const RESPONSE_SCHEMA_VERSION_V2 = "2026-05-p2-response-v2";
+
+const P2_TOOL_ALLOWLIST = new Set([
+  "get_unit_debt_trend",
+  "get_building_debt_trend",
+  "get_collections_trend",
+] as const);
+
+type P2ToolName = (typeof P2_TOOL_ALLOWLIST)[number];
 
 export class HttpBuildingOSReadOnlyQueryGateway
   implements BuildingOSReadOnlyQueryGateway

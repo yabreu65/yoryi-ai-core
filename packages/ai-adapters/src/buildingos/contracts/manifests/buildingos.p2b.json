@@ -1,0 +1,205 @@
+{
+  "contractVersion": "2026-05-buildingos-p2b-manifest-v1",
+  "defaults": {
+    "limit": 20,
+    "maxLimit": 50,
+    "maxClarifications": 2,
+    "requireBuildingWhenMultiBuilding": true,
+    "statuses": ["PENDING", "IN_PROGRESS", "APPROVED", "REJECTED", "COMPLETED", "CANCELLED"],
+    "processTypes": ["LIQUIDATION", "EXPENSE_VALIDATION", "CLAIM"],
+    "sortBy": "createdAt",
+    "sortDir": "desc"
+  },
+  "routes": [
+    {
+      "intentCode": "SEARCH_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "liquidaciones",
+        "procesos",
+        "expedientes",
+        "aprobaciones",
+        "validaciones",
+        "listado procesos",
+        "buscar procesos",
+        "ver procesos",
+        "mostrar procesos",
+        "estado proceso"
+      ],
+      "toolInput": {}
+    },
+    {
+      "intentCode": "GET_PROCESS_SUMMARY",
+      "toolName": "get_process_summary",
+      "keywords": [
+        "resumen procesos",
+        "resumen",
+        "estadisticas procesos",
+        "estadisticas de procesos",
+        "dashboard procesos",
+        "overview procesos",
+        "cantidad procesos",
+        "total procesos"
+      ],
+      "toolInput": {
+        "groupBy": "status"
+      }
+    },
+    {
+      "intentCode": "SEARCH_CLAIMS",
+      "toolName": "search_claims",
+      "keywords": [
+        "reclamos",
+        "claims",
+        "denuncias",
+        "quejas",
+        "gestiones",
+        "reclamaciones",
+        "buscar reclamos",
+        "listado reclamos"
+      ],
+      "toolInput": {}
+    },
+    {
+      "intentCode": "SEARCH_LIQUIDATIONS",
+      "toolName": "search_processes",
+      "keywords": [
+        "liquidaciones",
+        "liquidacion",
+        "liqs"
+      ],
+      "toolInput": {
+        "processTypes": ["LIQUIDATION"]
+      }
+    },
+    {
+      "intentCode": "SEARCH_EXPENSE_VALIDATIONS",
+      "toolName": "search_processes",
+      "keywords": [
+        "aprobaciones",
+        "validaciones",
+        "gastos",
+        "validacion de gastos",
+        "aprobacion de gastos"
+      ],
+      "toolInput": {
+        "processTypes": ["EXPENSE_VALIDATION"]
+      }
+    },
+    {
+      "intentCode": "GET_PENDING_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "pendientes",
+        "pending",
+        "sin resolver",
+        "sin aprobar",
+        "en espera",
+        "a espera"
+      ],
+      "toolInput": {
+        "statuses": ["PENDING", "IN_PROGRESS"]
+      }
+    },
+    {
+      "intentCode": "GET_APPROVED_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "aprobados",
+        "aprobadas",
+        "aprobado",
+        "aprobada",
+        "aceptados"
+      ],
+      "toolInput": {
+        "statuses": ["APPROVED"]
+      }
+    },
+    {
+      "intentCode": "GET_REJECTED_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "rechazados",
+        "rechazadas",
+        "rechazado",
+        "rechazada",
+        "rechazo",
+        "denegados"
+      ],
+      "toolInput": {
+        "statuses": ["REJECTED"]
+      }
+    },
+    {
+      "intentCode": "GET_OVERDUE_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "vencidos",
+        "vencida",
+        "overdue",
+        "fuera de sla",
+        "sla",
+        "retrasados",
+        "atrasados"
+      ],
+      "toolInput": {
+        "overdueSla": true
+      }
+    },
+    {
+      "intentCode": "GET_UNASSIGNED_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "sin asignar",
+        "sin asignada",
+        "no asignados",
+        "unassigned",
+        "sin responsable"
+      ],
+      "toolInput": {
+        "assigned": false
+      }
+    },
+    {
+      "intentCode": "GET_HIGH_PRIORITY_PROCESSES",
+      "toolName": "search_processes",
+      "keywords": [
+        "urgente",
+        "urgentes",
+        "alta prioridad",
+        "prioridad alta",
+        "prioridad",
+        "critico",
+        "criticos",
+        "importante"
+      ],
+      "toolInput": {
+        "priority": 3
+      }
+    },
+    {
+      "intentCode": "GET_PROCESSES_BY_PERIOD",
+      "toolName": "search_processes",
+      "keywords": [
+        "periodo",
+        "mes",
+        "marzo",
+        "abril",
+        "mayo",
+        "enero",
+        "febrero",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+        "del mes",
+        "de este mes",
+        "del periodo"
+      ],
+      "toolInput": {}
+    }
+  ]
+}

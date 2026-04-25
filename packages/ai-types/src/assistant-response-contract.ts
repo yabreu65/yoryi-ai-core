@@ -1,6 +1,9 @@
 export const ASSISTANT_RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+export const ASSISTANT_RESPONSE_SCHEMA_VERSION_V2 = "2026-05-p2-response-v2";
 
-export type AssistantResponseSource = "live_data" | "fallback";
+export type AssistantResponseSourceV1 = "live_data" | "fallback";
+export type AssistantResponseSourceV2 = "live_data" | "snapshot" | "clarification";
+export type AssistantResponseSource = AssistantResponseSourceV1 | AssistantResponseSourceV2;
 
 export type AssistantResponseType =
   | "metric"
@@ -30,13 +33,13 @@ export type AssistantResponseSchema = {
   metadata: Record<string, unknown>;
 };
 
-export function isAssistantResponseSchema(value: unknown): value is AssistantResponseSchema {
+export function isAssistantResponseSchemaV1(value: unknown): value is AssistantResponseSchema {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
-    isNonEmptyString(value.contractVersion) &&
+    value.contractVersion === ASSISTANT_RESPONSE_SCHEMA_VERSION &&
     isNonEmptyString(value.answer) &&
     (value.answerSource === "live_data" || value.answerSource === "fallback") &&
     isResponseType(value.responseType) &&
@@ -44,6 +47,26 @@ export function isAssistantResponseSchema(value: unknown): value is AssistantRes
     Array.isArray(value.actions) &&
     isRecord(value.metadata)
   );
+}
+
+export function isAssistantResponseSchemaV2(value: unknown): value is AssistantResponseSchema {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.contractVersion === ASSISTANT_RESPONSE_SCHEMA_VERSION_V2 &&
+    isNonEmptyString(value.answer) &&
+    (value.answerSource === "live_data" || value.answerSource === "snapshot" || value.answerSource === "clarification") &&
+    isResponseType(value.responseType) &&
+    isDataScope(value.dataScope) &&
+    Array.isArray(value.actions) &&
+    isRecord(value.metadata)
+  );
+}
+
+export function isAssistantResponseSchema(value: unknown): value is AssistantResponseSchema {
+  return isAssistantResponseSchemaV1(value) || isAssistantResponseSchemaV2(value);
 }
 
 function isResponseType(value: unknown): value is AssistantResponseType {

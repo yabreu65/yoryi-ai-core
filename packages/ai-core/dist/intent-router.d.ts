@@ -9,6 +9,7 @@ export declare class ChatIntentRouter {
     route(input: ChatIntentRouterInput): ChatIntentRoute;
     isMutationRequest(question: string): boolean;
     private isHowToMutationQuestion;
+    private isReadOnlyPendingPaymentsQuery;
     private isAmbiguousRequest;
     private hasDomainKeyword;
     private hasConcreteModuleContext;

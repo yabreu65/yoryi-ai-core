@@ -10,7 +10,17 @@ export declare class BuildingOSAdapter implements SaasAssistantAdapter {
     private readonly financialGateway;
     private readonly readOnlyQueryGateway;
     private readonly readOnlyIntentClassifier;
+    private readonly p0Router;
+    private readonly p1Router;
+    private readonly pendingClarifications;
+    private static readonly CLARIFICATION_TTL_MS;
     constructor(options?: BuildingOSAdapterOptions);
+    private getSessionId;
+    private buildClarificationKey;
+    private savePendingClarification;
+    private getAndValidatePendingClarification;
+    private resolveNumericOption;
+    private buildObservabilityMetadata;
     getModules(): Promise<AppModuleDefinition[]>;
     getRoles(): Promise<RoleDefinition[]>;
     getContext(input: RuntimeContextInput): Promise<ResolvedAssistantContext>;

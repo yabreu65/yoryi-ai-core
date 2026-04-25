@@ -54,4 +54,24 @@ describe("ChatIntentRouter", () => {
 
     expect(route).toBe("live_data_or_knowledge");
   });
+
+  it("allows read-only pending payments queries that use approve keyword as question", () => {
+    const route = router.route({
+      question: "¿Cuántos pagos pendientes hay para aprobar hoy?",
+      queryOnly: true,
+      currentModule: "payments",
+    });
+
+    expect(route).toBe("live_data_or_knowledge");
+  });
+
+  it("still blocks real mutation with approve keyword", () => {
+    const route = router.route({
+      question: "Aprueba este pago",
+      queryOnly: true,
+      currentModule: "payments",
+    });
+
+    expect(route).toBe("mutation_blocked");
+  });
 });

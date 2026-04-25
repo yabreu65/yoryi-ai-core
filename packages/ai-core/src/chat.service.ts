@@ -318,6 +318,8 @@ export class ChatService {
     let dataBackedLatencyMs: number | undefined;
     let dataBackedAnswer: DataBackedAnswerResult | null = null;
 
+    console.log('[DEBUG CHAT] About to call resolveDataBackedAnswer, question:', request.message.substring(0, 40));
+
     if (this.adapter.resolveDataBackedAnswer) {
       const startedAt = Date.now();
       try {
