@@ -1,0 +1,94 @@
+{
+  "contractVersion": "2026-05-buildingos-p3-manifest-v1",
+  "defaults": {
+    "limit": 20,
+    "maxLimit": 50,
+    "topN": 5,
+    "maxTopN": 50,
+    "monthsBack": 6,
+    "maxMonthsBack": 24,
+    "requireBuildingWhenMultiBuilding": true,
+    "maxClarifications": 2,
+    "ranking": 5
+  },
+  "routes": [
+    {
+      "intentCode": "EXECUTIVE_DASHBOARD",
+      "toolName": "cross_query",
+      "keywords": ["dashboard ejecutivo", "resumen ejecutivo", "panel ejecutivo", "Resumen", "Dashboard", "reporte ejecutivo", "overview"],
+      "toolInput": {
+        "templateId": "TPL-10",
+        "params": {
+          "period": "2026-03"
+        }
+      }
+    },
+    {
+      "intentCode": "PENDING_ACTIONS",
+      "toolName": "cross_query",
+      "keywords": ["pendientes", "cola de trabajo", "acciones pendientes", "workqueue", "tareas pendientes", "qué tiene pendiente", "pendientes"],
+      "toolInput": {
+        "templateId": "TPL-05",
+        "params": {}
+      }
+    },
+    {
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "toolName": "cross_query",
+      "keywords": ["deuda por unidad", "ocupación", "deuda y ocupación", "estado cuenta", "deuda unitaria", "deuda por apartamento"],
+      "toolInput": {
+        "templateId": "TPL-01",
+        "params": {
+          "topN": 5,
+          "limit": 20
+        }
+      }
+    },
+    {
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "toolName": "cross_query",
+      "keywords": ["aging por edificio", "antigüedad de deuda", "deuda antiga", "deuda vencida", "antigüedad mora"],
+      "toolInput": {
+        "templateId": "TPL-07",
+        "params": {}
+      }
+    },
+    {
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "toolName": "cross_query",
+      "keywords": ["eficiencia de cobranza", "cobranza por ocupante", "owner tenant", "eficiencia", "cobrado por tipo"],
+      "toolInput": {
+        "templateId": "TPL-09",
+        "params": {
+          "topN": 5
+        }
+      }
+    },
+    {
+      "intentCode": "UNIT_DEBT_TREND",
+      "toolName": "get_unit_debt_trend",
+      "keywords": ["tendencia deuda", "evolución deuda", "historial deuda", "deuda por mes", "tendencia mensual"],
+      "toolInput": {
+        "months": 6,
+        "metric": "outstanding"
+      }
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "toolName": "get_building_debt_trend",
+      "keywords": ["torre", "edificio", "deuda torre", "deuda por torre", "tendencia torre"],
+      "toolInput": {
+        "months": 6,
+        "metric": "outstanding"
+      }
+    },
+    {
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "toolName": "get_collections_trend",
+      "keywords": ["cobros", "recaudación", "cobranza", "tendencia cobros"],
+      "toolInput": {
+        "months": 6
+      }
+    }
+  ]
+}
