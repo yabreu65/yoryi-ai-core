@@ -2,6 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpBuildingOSReadOnlyQueryGateway = void 0;
 const RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+const RESPONSE_SCHEMA_VERSION_V2 = "2026-05-p2-response-v2";
+const P2_TOOL_ALLOWLIST = new Set([
+    "get_unit_debt_trend",
+    "get_building_debt_trend",
+    "get_collections_trend",
+]);
 class HttpBuildingOSReadOnlyQueryGateway {
     baseUrl;
     timeoutMs;
