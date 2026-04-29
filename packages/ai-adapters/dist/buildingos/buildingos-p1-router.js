@@ -101,6 +101,40 @@ class BuildingOSP1Router {
         if (!normalized) {
             return null;
         }
+        const hasUnitAndBuilding = this.hasUnitAndBuildingTokens(normalized);
+        if (hasUnitAndBuilding && this.isUnitDebtQuery(normalized)) {
+            const unitDebtRoute = this.findRouteByIntent("GET_UNIT_DEBT");
+            if (unitDebtRoute) {
+                const baseInput = { ...(unitDebtRoute.toolInput ?? {}) };
+                if (baseInput.ranking === undefined) {
+                    baseInput.ranking = this.manifest.defaults.ranking;
+                }
+                return {
+                    intentCode: unitDebtRoute.intentCode,
+                    toolName: unitDebtRoute.toolName,
+                    toolInput: baseInput,
+                    score: 1,
+                };
+            }
+        }
+        if (!hasUnitAndBuilding && this.isAggregateDebtQuery(normalized)) {
+            const aggregateIntent = this.resolveAggregateIntent(normalized);
+            const aggregateRoute = aggregateIntent
+                ? this.findRouteByIntent(aggregateIntent)
+                : null;
+            if (aggregateRoute) {
+                const baseInput = { ...(aggregateRoute.toolInput ?? {}) };
+                if (baseInput.ranking === undefined) {
+                    baseInput.ranking = this.manifest.defaults.ranking;
+                }
+                return {
+                    intentCode: aggregateRoute.intentCode,
+                    toolName: aggregateRoute.toolName,
+                    toolInput: baseInput,
+                    score: 1,
+                };
+            }
+        }
         console.log('[ROUTER-P1] Question:', question);
         console.log('[ROUTER-P1] Normalized:', normalized);
         console.log('[ROUTER-P1] Manifest version:', this.manifest.contractVersion);
@@ -234,6 +268,69 @@ class BuildingOSP1Router {
             }
         }
         return score;
+    }
+    findRouteByIntent(intentCode) {
+        return this.manifest.routes.find((route) => route.intentCode === intentCode) ?? null;
+    }
+    hasUnitAndBuildingTokens(normalizedQuestion) {
+        const hasUnit = /(?:unidad|apartamento|depto|departamento|apto|uf)\s+[a-z0-9-]+/.test(normalizedQuestion);
+        const hasBuilding = /(?:torre|edificio|bloque)\s+[a-z0-9]+/.test(normalizedQuestion);
+        return hasUnit && hasBuilding;
+    }
+    isUnitDebtQuery(normalizedQuestion) {
+        const isHistoricalBalanceQuery = normalizedQuestion.includes("periodo") ||
+            normalizedQuestion.includes("período") ||
+            normalizedQuestion.includes("historial") ||
+            normalizedQuestion.includes("evolucion") ||
+            normalizedQuestion.includes("evolución");
+        if (isHistoricalBalanceQuery) {
+            return false;
+        }
+        return (normalizedQuestion.includes("deuda") ||
+            normalizedQuestion.includes("debe") ||
+            normalizedQuestion.includes("saldo") ||
+            normalizedQuestion.includes("adeuda") ||
+            normalizedQuestion.includes("expensa") ||
+            normalizedQuestion.includes("al dia"));
+    }
+    isAggregateDebtQuery(normalizedQuestion) {
+        return (normalizedQuestion.includes("top") ||
+            normalizedQuestion.includes("ranking") ||
+            normalizedQuestion.includes("moroso") ||
+            normalizedQuestion.includes("morosidad") ||
+            normalizedQuestion.includes("aging") ||
+            normalizedQuestion.includes("antiguedad") ||
+            normalizedQuestion.includes("resumen") ||
+            normalizedQuestion.includes("que torres") ||
+            normalizedQuestion.includes("deuda por torre") ||
+            normalizedQuestion.includes("deuda por edificio") ||
+            normalizedQuestion.includes("unidades con deuda") ||
+            normalizedQuestion.includes("listame unidades con deuda") ||
+            normalizedQuestion.includes("cargos pendientes"));
+    }
+    resolveAggregateIntent(normalizedQuestion) {
+        if (normalizedQuestion.includes("aging") ||
+            normalizedQuestion.includes("antiguedad")) {
+            return "GET_DEBT_AGING";
+        }
+        if (normalizedQuestion.includes("cargos pendientes") ||
+            normalizedQuestion.includes("pagos pendientes")) {
+            return "GET_PENDING_PAYMENTS";
+        }
+        if (normalizedQuestion.includes("unidades con deuda") ||
+            normalizedQuestion.includes("listame unidades con deuda")) {
+            return "GET_OVERDUE_UNITS";
+        }
+        if (normalizedQuestion.includes("top") ||
+            normalizedQuestion.includes("ranking") ||
+            normalizedQuestion.includes("que torres") ||
+            normalizedQuestion.includes("torres deben") ||
+            normalizedQuestion.includes("deuda por torre") ||
+            normalizedQuestion.includes("deuda por edificio") ||
+            normalizedQuestion.includes("resumen de deuda")) {
+            return "GET_DEBT_BY_TOWER";
+        }
+        return null;
     }
     isUnitDebtWithoutReference(normalizedQuestion) {
         const mentionsDebt = normalizedQuestion.includes("deuda") ||

@@ -55,11 +55,51 @@ describe("BuildingOSP1Router", () => {
     expect(result?.toolName).toBe("analytics_debt_by_tower");
   });
 
+  it("routes debt status synonyms to GET_UNIT_DEBT", () => {
+    const saldo = router.route("saldo pendiente unidad A-1203 torre A");
+    const alDia = router.route("esta al dia la unidad A-1203 torre A");
+    const adeuda = router.route("expensas adeudadas unidad A-1203 torre A");
+
+    expect(saldo?.intentCode).toBe("GET_UNIT_DEBT");
+    expect(alDia?.intentCode).toBe("GET_UNIT_DEBT");
+    expect(adeuda?.intentCode).toBe("GET_UNIT_DEBT");
+  });
+
+  it("forces GET_UNIT_DEBT when unit+building tokens are present", () => {
+    const result = router.route("deuda unidad A-1203 torre A");
+    expect(result?.intentCode).toBe("GET_UNIT_DEBT");
+    expect(result?.toolName).toBe("get_unit_balance");
+  });
+
   it("routes ranking de deuda por torre", () => {
     const result = router.route("Ranking de deuda por torre");
     expect(result).not.toBeNull();
     expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
     expect(result?.toolName).toBe("analytics_debt_by_tower");
+  });
+
+  it("routes aggregate ranking phrases to GET_DEBT_BY_TOWER", () => {
+    const result = router.route("top morosos");
+    expect(result?.intentCode).toBe("GET_DEBT_BY_TOWER");
+    expect(result?.toolName).toBe("analytics_debt_by_tower");
+  });
+
+  it("routes aging phrases to GET_DEBT_AGING", () => {
+    const result = router.route("deuda por antiguedad");
+    expect(result?.intentCode).toBe("GET_DEBT_AGING");
+    expect(result?.toolName).toBe("analytics_debt_aging");
+  });
+
+  it("routes unit debt listing phrases to GET_OVERDUE_UNITS", () => {
+    const result = router.route("listame unidades con deuda");
+    expect(result?.intentCode).toBe("GET_OVERDUE_UNITS");
+    expect(result?.toolName).toBe("search_payments");
+  });
+
+  it("routes pending charges phrases to GET_PENDING_PAYMENTS", () => {
+    const result = router.route("filtra cargos pendientes por torre A");
+    expect(result?.intentCode).toBe("GET_PENDING_PAYMENTS");
+    expect(result?.toolName).toBe("search_payments");
   });
 
   it("routes balance by period question", () => {

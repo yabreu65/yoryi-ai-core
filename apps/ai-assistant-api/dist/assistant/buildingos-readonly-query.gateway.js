@@ -40,6 +40,15 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 ? `/assistant/tools/${input.toolName}`
                 : this.endpointPath;
             const url = new URL(endpointPath, this.baseUrl);
+            const headers = this.buildHeadersForContext(input.context);
+            console.log("[GATEWAY] Sending request to:", url.toString());
+            console.log("[GATEWAY] Headers:", JSON.stringify(headers));
+            console.log("[GATEWAY] Body context:", JSON.stringify({
+                tenantId: input.context.tenantId,
+                userId: input.context.userId,
+                role: input.context.role,
+                toolName: input.toolName,
+            }));
             const response = await fetch(url.toString(), {
                 method: "POST",
                 headers: this.buildHeadersForContext(input.context),
@@ -62,12 +71,15 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 signal: controller.signal,
             });
             if (!response.ok) {
+                console.log("[GATEWAY] HTTP error:", response.status, response.statusText);
                 this.registerFailure();
                 return null;
             }
             const payload = (await response.json());
+            console.log("[GATEWAY] Raw response:", JSON.stringify(payload).substring(0, 200));
             const parsed = this.parseGatewayResponse(payload);
             if (!parsed) {
+                console.log("[GATEWAY] Parse failed, payload type:", typeof payload);
                 this.registerFailure();
                 return null;
             }
@@ -130,7 +142,7 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 contractVersion: payload.contractVersion,
                 answer: payload.answer,
                 answerSource: payload.answerSource === "live_data" ? "live_data" : undefined,
-                responseType: payload.responseType,
+                responseType: this.normalizeResponseType(payload.responseType),
                 dataScope: payload.dataScope,
                 actions: payload.actions,
                 metadata: payload.metadata,
@@ -150,7 +162,7 @@ class HttpBuildingOSReadOnlyQueryGateway {
         const actions = this.parseActions(payload.actions);
         const metadata = this.parseMetadata(payload.metadata);
         if (responseType) {
-            response.responseType = responseType;
+            response.responseType = this.normalizeResponseType(responseType);
         }
         if (dataScope) {
             response.dataScope = dataScope;
@@ -209,6 +221,25 @@ class HttpBuildingOSReadOnlyQueryGateway {
         }
         const trimmed = value.trim();
         return trimmed.length > 0 ? trimmed : null;
+    }
+    normalizeResponseType(value) {
+        const normalized = this.asNonEmptyString(value)?.toLowerCase();
+        if (!normalized) {
+            return undefined;
+        }
+        if (normalized === "metric") {
+            return "exact";
+        }
+        if (normalized === "no_data") {
+            return "clarification";
+        }
+        if (normalized === "exact" ||
+            normalized === "summary" ||
+            normalized === "list" ||
+            normalized === "clarification") {
+            return normalized;
+        }
+        return undefined;
     }
     isRecord(value) {
         return typeof value === "object" && value !== null && !Array.isArray(value);
