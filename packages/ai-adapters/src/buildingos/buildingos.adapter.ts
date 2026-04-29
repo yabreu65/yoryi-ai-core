@@ -456,94 +456,80 @@ private getAndValidatePendingClarification(
       };
     }
 
-    const p3Route = this.p3Router.route(question, {
-      buildingId: context.extra?.buildingId as string | undefined,
-      unitId: context.extra?.unitId as string | undefined,
-      buildingCount: (context.extra?.buildingCount as number) || 1,
-    });
-    if (p3Route && "intentCode" in p3Route && p3Route.intentCode) {
-      console.log("[ROUTER] P3 matched:", p3Route.intentCode, p3Route.toolName, JSON.stringify(p3Route.toolInput));
-      console.log("[ROUTER] P3 ENTERED block");
-      if (this.canRunReadOnlyIntent("GET_COLLECTIONS_SUMMARY" as BuildingOSCanonicalIntentCode, context)) {
-        if (!this.readOnlyQueryGateway) {
-          console.log("[ROUTER] P3 gateway UNDEFINED");
-          return null;
-        }
-        try {
-          const result = await this.readOnlyQueryGateway.query({
-            intentCode: "CROSS_QUERY" as BuildingOSCanonicalIntentCode,
-            question,
-            context,
-            toolName: p3Route.toolName as any,
-            toolInput: p3Route.toolInput,
-          });
-          if (result) {
-            const traceId = generateTraceId();
-            const startedAt = Date.now();
-            return {
-              answer: result.answer,
-              actions: result.actions?.length ? result.actions : [],
-              metadata: this.buildObservabilityMetadata(
-                p3Route.intentCode,
-                "live_data",
-                { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt, p3Routed: true }
-              ),
-            };
-          }
-        } catch {
-          // Fall through to next router
-        }
-      }
-    }
-
-    if (this.financialGateway && this.isResidentDebtQuestion(question, context)) {
-      const startedAt = Date.now();
-
-      try {
-        const debtSummary = await this.financialGateway.getResidentDebtSummary({
-          tenantId: context.tenantId,
-          userId: context.userId,
-        });
-
-        if (!debtSummary) {
-          return null;
-        }
-
-        const amount = new Intl.NumberFormat("es-AR", {
-          style: "currency",
-          currency: debtSummary.currency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(debtSummary.amount);
-
-        const asOfDate = this.formatDateSafe(debtSummary.asOf);
-
+    const p0Route = this.p0Router.route(question);
+    if (p0Route) {
+      if (!this.canRunReadOnlyIntent(p0Route.intentCode, context)) {
         return {
-          answer: `Tu deuda actual es ${amount} (corte: ${asOfDate}).`,
-          actions: [
-            {
-              key: "view-my-balance",
-              label: "View My Balance",
-              description: "View your current balance",
-            },
-            {
-              key: "view-pending-charges",
-              label: "View Pending Charges",
-              description: "View your pending charges",
-            },
-          ],
+          answer:
+            "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
+          actions: [],
           metadata: {
-            debtQueryDetected: true,
-            debtAnswerExact: true,
-            financialGatewayLatencyMs: Date.now() - startedAt,
-            asOf: debtSummary.asOf,
-            currency: debtSummary.currency,
-            intent: "resident_debt_summary",
+            responseType: "clarification",
+            intent: p0Route.intentCode,
+            intentCode: p0Route.intentCode,
+            answerSource: "live_data",
+            authorizationDenied: true,
           },
         };
-      } catch {
-        return null;
       }
+
+      if (!this.readOnlyQueryGateway) {
+        const clarification = this.p0Router.buildClarification(question);
+        return {
+          answer: clarification.answer,
+          actions: [],
+          metadata: {
+            responseType: "clarification",
+            answerSource: "live_data",
+            clarificationOptions: clarification.options,
+            p0Routed: true,
+            gatewayUnavailable: true,
+          },
+        };
+      }
+
+      try {
+        const result = await this.readOnlyQueryGateway.query({
+          intentCode: p0Route.intentCode,
+          question,
+          context,
+          toolName: p0Route.toolName as BuildingOSReadOnlyQueryInput["toolName"],
+          toolInput: p0Route.toolInput,
+        });
+
+        if (result) {
+          return {
+            answer: result.answer,
+            actions:
+              result.actions && result.actions.length > 0
+                ? result.actions
+                : this.getDefaultReadOnlyActions(p0Route.intentCode),
+            metadata: {
+              ...result.metadata,
+              intent: p0Route.intentCode,
+              intentCode: p0Route.intentCode,
+              intentScore: p0Route.score,
+              p0Routed: true,
+              answerSource: "live_data",
+            },
+          };
+        }
+      } catch {
+        // Continue with controlled clarification fallback below.
+      }
+
+      const clarification = this.p0Router.buildClarification(question);
+      return {
+        answer: clarification.answer,
+        actions: [],
+        metadata: {
+          responseType: "clarification",
+          answerSource: "live_data",
+          clarificationOptions: clarification.options,
+          p0Routed: true,
+          gatewayUnavailable: true,
+        },
+      };
     }
 
     if (!this.readOnlyQueryGateway) {
@@ -737,18 +723,18 @@ private getAndValidatePendingClarification(
     if (p2Route && "intentCode" in p2Route && p2Route.intentCode) {
       console.log("[ROUTER] P2 matched:", p2Route.intentCode, p2Route.toolName, JSON.stringify(p2Route.toolInput));
       console.log("[ROUTER] P2 ENTERED routing block, checking canRun...");
-console.log("[ROUTER] P2 calling gateway, baseUrl:", this.readOnlyQueryGateway ? "defined" : "UNDEFINED");
-    console.log("[ROUTER] P2 baseUrl check:", this.readOnlyQueryGateway);
-    console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
-    console.log("[ROUTER] P2 about to call canRunReadOnlyIntent");
-    const canRun = this.canRunReadOnlyIntent(p2Route.intentCode as BuildingOSCanonicalIntentCode, context);
-console.log("[ROUTER] P2 got canRun result:", canRun);
+      console.log("[ROUTER] P2 calling gateway, baseUrl:", this.readOnlyQueryGateway ? "defined" : "UNDEFINED");
+      console.log("[ROUTER] P2 baseUrl check:", this.readOnlyQueryGateway);
+      console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
+      console.log("[ROUTER] P2 about to call canRunReadOnlyIntent");
+      const canRun = this.canRunReadOnlyIntent(p2Route.intentCode as BuildingOSCanonicalIntentCode, context);
+      console.log("[ROUTER] P2 got canRun result:", canRun);
       if (canRun) {
         console.log("[ROUTER] P2 calling gateway NOW...");
-      console.log("[ROUTER] P2 toolInput:", JSON.stringify(p2Route.toolInput));
-      console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
-      try {
-        const result = await this.readOnlyQueryGateway.query({
+        console.log("[ROUTER] P2 toolInput:", JSON.stringify(p2Route.toolInput));
+        console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
+        try {
+          const result = await this.readOnlyQueryGateway.query({
             intentCode: p2Route.intentCode as BuildingOSCanonicalIntentCode,
             question,
             context,
@@ -770,70 +756,97 @@ console.log("[ROUTER] P2 got canRun result:", canRun);
             };
           }
         } catch {
-          // Fall through to P0 on error
+          // Fall through to P3 on error
         }
       }
     }
 
-    const p0Route = this.p0Router.route(question);
-    if (p0Route) {
-      if (!this.canRunReadOnlyIntent(p0Route.intentCode, context)) {
-        return {
-          answer:
-            "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
-          actions: [],
-          metadata: {
-            responseType: "clarification",
-            intent: p0Route.intentCode,
-            intentCode: p0Route.intentCode,
-            answerSource: "live_data",
-            authorizationDenied: true,
-          },
-        };
+    if (this.isP3EnabledForTenant(context.tenantId)) {
+      const p3Route = this.p3Router.route(question, {
+        buildingId: context.extra?.buildingId as string | undefined,
+        unitId: context.extra?.unitId as string | undefined,
+        buildingCount: (context.extra?.buildingCount as number) || 1,
+      });
+      if (p3Route && "intentCode" in p3Route && p3Route.intentCode) {
+        console.log("[ROUTER] P3 matched:", p3Route.intentCode, p3Route.toolName, JSON.stringify(p3Route.toolInput));
+        console.log("[ROUTER] P3 ENTERED block");
+        if (this.canRunReadOnlyIntent("GET_COLLECTIONS_SUMMARY" as BuildingOSCanonicalIntentCode, context)) {
+          try {
+            const result = await this.readOnlyQueryGateway.query({
+              intentCode: "CROSS_QUERY" as BuildingOSCanonicalIntentCode,
+              question,
+              context,
+              toolName: p3Route.toolName as any,
+              toolInput: p3Route.toolInput,
+            });
+            if (result) {
+              const traceId = generateTraceId();
+              const startedAt = Date.now();
+              return {
+                answer: result.answer,
+                actions: result.actions?.length ? result.actions : [],
+                metadata: this.buildObservabilityMetadata(
+                  p3Route.intentCode,
+                  "live_data",
+                  { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt, p3Routed: true }
+                ),
+              };
+            }
+          } catch {
+            // Fall through to next fallback
+          }
+        }
       }
+    }
+
+    if (this.financialGateway && this.isResidentDebtQuestion(question, context)) {
+      const startedAt = Date.now();
 
       try {
-        const result = await this.readOnlyQueryGateway.query({
-          intentCode: p0Route.intentCode,
-          question,
-          context,
-          toolName: p0Route.toolName as BuildingOSReadOnlyQueryInput["toolName"],
-          toolInput: p0Route.toolInput,
+        const debtSummary = await this.financialGateway.getResidentDebtSummary({
+          tenantId: context.tenantId,
+          userId: context.userId,
         });
 
-        if (result) {
-          return {
-            answer: result.answer,
-            actions:
-              result.actions && result.actions.length > 0
-                ? result.actions
-                : this.getDefaultReadOnlyActions(p0Route.intentCode),
-            metadata: {
-              ...result.metadata,
-              intent: p0Route.intentCode,
-              intentCode: p0Route.intentCode,
-              intentScore: p0Route.score,
-              p0Routed: true,
-              answerSource: "live_data",
-            },
-          };
+        if (!debtSummary) {
+          return null;
         }
-      } catch {
-        // Continue with controlled clarification fallback below.
-      }
 
-      const clarification = this.p0Router.buildClarification(question);
-      return {
-        answer: clarification.answer,
-        actions: [],
-        metadata: {
-          responseType: "clarification",
-          answerSource: "live_data",
-          clarificationOptions: clarification.options,
-          p0Routed: true,
-          gatewayUnavailable: true,
-        },
-      };
+        const amount = new Intl.NumberFormat("es-AR", {
+          style: "currency",
+          currency: debtSummary.currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(debtSummary.amount);
+
+        const asOfDate = this.formatDateSafe(debtSummary.asOf);
+
+        return {
+          answer: `Tu deuda actual es ${amount} (corte: ${asOfDate}).`,
+          actions: [
+            {
+              key: "view-my-balance",
+              label: "View My Balance",
+              description: "View your current balance",
+            },
+            {
+              key: "view-pending-charges",
+              label: "View Pending Charges",
+              description: "View your pending charges",
+            },
+          ],
+          metadata: {
+            debtQueryDetected: true,
+            debtAnswerExact: true,
+            financialGatewayLatencyMs: Date.now() - startedAt,
+            asOf: debtSummary.asOf,
+            currency: debtSummary.currency,
+            intent: "resident_debt_summary",
+          },
+        };
+      } catch {
+        return null;
+      }
     }
 
     const paymentFallback = this.buildPaymentOperationalFallback(question);
@@ -1899,6 +1912,31 @@ console.log("[ROUTER] P2 got canRun result:", canRun);
       normalizedQuestion.includes("deben expensa") ||
       normalizedQuestion.includes("departamentos deben")
     );
+  }
+
+  private isP3EnabledForTenant(tenantId?: string): boolean {
+    if (process.env.ASSISTANT_P3_ENABLED !== "true") {
+      return false;
+    }
+
+    const canaryTenants = (process.env.ASSISTANT_YORYI_CANARY_TENANTS ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+
+    if (canaryTenants.includes("*")) {
+      return true;
+    }
+
+    if (canaryTenants.length === 0) {
+      return true;
+    }
+
+    if (!tenantId) {
+      return false;
+    }
+
+    return canaryTenants.includes(tenantId);
   }
 
   private normalizeText(value: string): string {
