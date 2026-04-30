@@ -826,7 +826,7 @@ private getAndValidatePendingClarification(
         answer: clarificationAnswer,
         actions: [],
         metadata: this.buildObservabilityMetadata(context, intentEntry.intentCode, "live_data", {
-          gatewayOutcome: "invalid_payload",
+          gatewayOutcome: "missing_entities",
           resolvedLevel: intentEntry.level,
           resolvedIntentCode: intentEntry.intentCode,
           fallbackPath: "intent_library_clarification",
@@ -1200,7 +1200,7 @@ if (execution.status === "success") {
         answer: `Para ayudarte mejor, ¿te referís a:\n${optionLines.join("\n")}?`,
         actions: [],
         metadata: this.buildObservabilityMetadata(context, intentEntry.intentCode, "live_data", {
-          gatewayOutcome: "invalid_payload",
+          gatewayOutcome: "missing_entities",
           resolvedLevel: intentEntry.level,
           resolvedIntentCode: intentEntry.intentCode,
           fallbackPath: "intent_library_clarification",
@@ -1391,7 +1391,7 @@ if (execution.status === "success") {
           "Necesito una aclaracion para responder en modo operativo. Decime si queres saldo, pagos, residente o busqueda de la unidad.",
         actions: [],
         metadata: this.buildObservabilityMetadata(context, "UNKNOWN", "live_data", {
-          gatewayOutcome: "invalid_payload",
+          gatewayOutcome: "missing_entities",
           resolvedLevel: "FALLBACK",
           fallbackPath: "ambiguous_unit_building_query",
           latencyMsTotal: Date.now() - turnStartedAt,
@@ -2805,7 +2805,7 @@ if (execution.status === "success") {
         answer: "No encontré una coincidencia única para la unidad indicada. Verificá unidad y torre exactas.",
         actions: [],
         metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
-          gatewayOutcome: "invalid_payload",
+          gatewayOutcome: "missing_entities",
           resolvedLevel: "P1",
           toolName: route.toolName,
           fallbackPath: "forced_unit_debt_no_match",
@@ -3005,7 +3005,7 @@ if (execution.status === "success") {
         "Para responder en forma operativa necesito acotar el alcance mínimo: indicá torre/edificio o período (por ejemplo: Torre A, últimos 3 meses).",
       actions: [],
       metadata: this.buildObservabilityMetadata(context, intentCode, "live_data", {
-        gatewayOutcome: "invalid_payload",
+        gatewayOutcome: "missing_entities",
         resolvedLevel: "P1",
         fallbackPath: "aggregate_scope_required",
         responseType: "clarification",
@@ -3023,7 +3023,7 @@ if (execution.status === "success") {
         "No encontré una coincidencia única para la unidad indicada. Verificá unidad y torre exactas.",
       actions: [],
       metadata: this.buildObservabilityMetadata(context, intentCode, "live_data", {
-        gatewayOutcome: "invalid_payload",
+        gatewayOutcome: "missing_entities",
         resolvedLevel: "P1",
         fallbackPath: "unit_lookup_ambiguous",
         responseType: "clarification",

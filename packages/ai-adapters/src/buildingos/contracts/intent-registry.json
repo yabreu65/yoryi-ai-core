@@ -64,6 +64,16 @@
       ]
     },
     {
+      "intentCode": "GET_BUILDING_DEBT_TOTAL",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0"
+      ]
+    },
+    {
       "intentCode": "GET_BUILDING_OVERDUE_TREND",
       "level": "P2A",
       "audience": "ADMIN",

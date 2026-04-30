@@ -219,16 +219,16 @@
       "level": "P0",
       "audience": "ADMIN",
       "utterances": [
-        "cual es la deuda total del edificio hoy",
-        "necesito deuda consolidada del edificio principal",
-        "mostrar saldo total adeudado del consorcio",
-        "dame deuda global del edificio al corte actual",
-        "cuanto debe el edificio completo ahora",
-        "resumen operativo de deuda total del edificio",
-        "consulta rapida deuda total edificio",
-        "quiero ver deuda acumulada del edificio en tiempo real",
-        "deuda total del edificio por administracion",
-        "indicame monto de deuda general del edificio"
+        "evolucion mensual de deuda del edificio",
+        "serie mensual de deuda del edificio",
+        "comparar deuda del edificio entre meses",
+        "variacion de deuda del edificio por periodo",
+        "deuda del edificio mes actual vs mes anterior",
+        "historial de deuda del edificio por mes",
+        "comportamiento mensual de deuda del edificio",
+        "deuda del edificio en meses recientes",
+        "analisis mensual de deuda del edificio",
+        "trayectoria mensual de deuda del edificio"
       ],
       "canonicalAnswer": {
         "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
@@ -475,6 +475,47 @@
           "lastPaymentDate": "lastPaymentDate",
           "towerName": "towerName",
           "status": "status",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TOTAL",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "¿Cuánta deuda total tiene el edificio?",
+        "¿Cuál es la deuda total del edificio?",
+        "Deuda total del edificio",
+        "Total de deuda por edificio",
+        "Mostrar saldo total adeudado del consorcio",
+        "Monto total de deuda del consorcio",
+        "Cuánto debe el edificio actualmente",
+        "Deuda acumulada del edificio hoy",
+        "Resumen de deuda total del edificio",
+        "Deuda global del edificio a la fecha",
+        "Total adeudado por el edificio"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Deuda total del edificio: {{totalDebt}} al {{asOf}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿De qué edificio querés consultar la deuda total?"
+      },
+      "toolBinding": {
+        "toolName": "get_building_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "totalDebt": "amount",
+          "asOf": "asOf",
           "currency": "currency"
         }
       },

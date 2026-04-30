@@ -97,6 +97,7 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result).not.toBeNull();
     expect(result?.metadata?.fallbackPath).toBe("intent_library_clarification");
     expect(result?.metadata?.clarificationAsked).toBe(true);
+    expect(result?.metadata?.gatewayOutcome).toBe("missing_entities");
     expect(result?.metadata?.missingEntities).toContain("unitId");
     expect(queryMock).not.toHaveBeenCalled();
   });
@@ -178,13 +179,13 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result?.answer).toContain("Deuda total del edificio");
     expect(result?.metadata?.intentLibraryMatched).toBe(true);
     expect(result?.metadata?.intentLibraryIntentCode).toBe(
-      "GET_BUILDING_DEBT_TREND"
+      "GET_BUILDING_DEBT_TOTAL"
     );
     expect(result?.metadata?.fallbackPath).toBe("cache_miss");
     expect(result?.metadata?.resolvedLevel).toBe("P0");
     expect(queryMock).toHaveBeenCalledTimes(1);
     expect(queryMock.mock.calls[0]?.[0]?.intentCode).toBe(
-      "GET_BUILDING_DEBT_TREND"
+      "GET_BUILDING_DEBT_TOTAL"
     );
     expect(queryMock.mock.calls[0]?.[0]?.toolName).toBe(
       "get_building_debt_trend"
@@ -241,8 +242,46 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result).not.toBeNull();
     expect(result?.metadata?.fallbackPath).toBe("intent_library_clarification");
     expect(result?.metadata?.clarificationAsked).toBe(true);
+    expect(result?.metadata?.gatewayOutcome).toBe("missing_entities");
     expect(result?.metadata?.missingEntities).toContain("buildingId");
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("ADMIN con buildingId en context y sin period usa default today", async () => {
+    const queryMock = vi
+      .fn<BuildingOSReadOnlyQueryGateway["query"]>()
+      .mockResolvedValue({
+        answer: "ok",
+        metadata: {
+          amount: 70000,
+          overdueAmount: 10000,
+          asOf: "2026-04-30",
+          currency: "ARS",
+        },
+      });
+
+    const adapter = new BuildingOSAdapter({
+      readOnlyQueryGateway: { query: queryMock },
+    });
+
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "cuanta deuda total tiene el edificio",
+      context: {
+        ...ADMIN_CONTEXT,
+        extra: {
+          buildingId: "EDIF-1",
+        },
+      },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.metadata?.intentLibraryIntentCode).toBe("GET_BUILDING_DEBT_TOTAL");
+    expect(result?.metadata?.responseType).toBe("exact");
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls[0]?.[0]?.toolInput).toMatchObject({
+      buildingId: "EDIF-1",
+      period: "today",
+    });
   });
 
   it("cache hit: no llama gateway y metadata cache_hit", async () => {

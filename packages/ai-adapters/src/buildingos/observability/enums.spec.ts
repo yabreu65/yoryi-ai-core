@@ -66,6 +66,7 @@ describe("Enum validation", () => {
         "unavailable",
         "invalid_entities",
         "invalid_payload",
+        "missing_entities",
         "cache_hit",
         "cache_miss",
       ];

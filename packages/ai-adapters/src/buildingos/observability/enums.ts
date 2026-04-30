@@ -7,6 +7,7 @@ export const GATEWAY_OUTCOMES = [
   "unavailable",
   "invalid_entities",
   "invalid_payload",
+  "missing_entities",
   "cache_hit",
   "cache_miss",
 ] as const;

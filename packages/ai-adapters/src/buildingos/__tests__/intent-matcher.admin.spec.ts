@@ -9,8 +9,8 @@ type AdminMatcherCase = {
 };
 
 const ADMIN_MATCHER_CASES: AdminMatcherCase[] = [
-  { id: "ADM-001", question: "cual es la deuda total del edificio hoy", expectedIntent: "GET_BUILDING_DEBT_TREND", minConfidence: 0.85 },
-  { id: "ADM-002", question: "mostrar saldo total adeudado del consorcio", expectedIntent: "GET_BUILDING_DEBT_TREND", minConfidence: 0.85 },
+  { id: "ADM-001", question: "cual es la deuda total del edificio hoy", expectedIntent: "GET_BUILDING_DEBT_TOTAL", minConfidence: 0.85 },
+  { id: "ADM-002", question: "mostrar saldo total adeudado del consorcio", expectedIntent: "GET_BUILDING_DEBT_TOTAL", minConfidence: 0.85 },
   { id: "ADM-003", question: "mostrar morosidad de unidades vencidas del edificio", expectedIntent: "GET_UNIT_OVERDUE_TREND", minConfidence: 0.85 },
   { id: "ADM-004", question: "panel operativo de vencidos por unidad", expectedIntent: "GET_UNIT_OVERDUE_TREND", minConfidence: 0.85 },
   { id: "ADM-005", question: "necesito top deudores del edificio", expectedIntent: "UNIT_DEBT_OCCUPANCY", minConfidence: 0.85 },
@@ -51,6 +51,6 @@ describe("Intent matcher ADMIN coverage", () => {
       role: "RESIDENT",
     });
 
-    expect(result?.intentCode).not.toBe("GET_BUILDING_DEBT_TREND");
+    expect(result?.intentCode).not.toBe("GET_BUILDING_DEBT_TOTAL");
   });
 });

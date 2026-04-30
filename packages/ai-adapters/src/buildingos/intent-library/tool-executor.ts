@@ -26,6 +26,17 @@ export type IntentLibraryToolExecutionResult = {
   gatewayResult?: DataBackedAnswerResult | null;
 };
 
+function logToolAccess(event: {
+  intentCode: string;
+  toolName?: string;
+  tenantId?: string;
+  outcome: IntentLibraryExecutionStatus | "skipped";
+  reason?: string;
+  latencyMsGateway: number;
+}): void {
+  console.log("[INTENT_TOOL_ACCESS]", event);
+}
+
 function formatCurrency(value: number, currency = "ARS"): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -118,12 +129,19 @@ function mapGatewayData(
   return merged;
 }
 
-function buildToolInput(entities: Record<string, string | undefined>): Record<string, unknown> {
+function buildToolInput(
+  intentCode: string,
+  entities: Record<string, string | undefined>
+): Record<string, unknown> {
   const toolInput: Record<string, unknown> = {};
   if (entities.unitId) toolInput.unitId = entities.unitId;
   if (entities.buildingId) toolInput.buildingId = entities.buildingId;
   if (entities.towerId) toolInput.towerId = entities.towerId;
-  if (entities.period) toolInput.period = entities.period;
+  if (entities.period) {
+    toolInput.period = entities.period;
+  } else if (intentCode === "GET_BUILDING_DEBT_TOTAL") {
+    toolInput.period = "today";
+  }
   return toolInput;
 }
 
@@ -155,6 +173,14 @@ export async function executeIntentLibraryTool(
   const toolName = input.intent.toolBinding?.toolName;
 
   if (!toolName) {
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "null",
+      reason: "missing_tool_name",
+      latencyMsGateway: Date.now() - startedAt,
+    });
     return {
       status: "null",
       sourceType: "live_data",
@@ -166,6 +192,14 @@ export async function executeIntentLibraryTool(
 
   if (isFinancialTool(toolName)) {
     if (!input.financialGateway || !input.context.tenantId) {
+      logToolAccess({
+        intentCode: input.intent.intentCode,
+        toolName,
+        tenantId: input.context.tenantId,
+        outcome: "error",
+        reason: "financial_gateway_or_tenant_missing",
+        latencyMsGateway: Date.now() - startedAt,
+      });
       return {
         status: "error",
         sourceType: "live_data",
@@ -181,6 +215,14 @@ export async function executeIntentLibraryTool(
       });
 
       if (!debt) {
+        logToolAccess({
+          intentCode: input.intent.intentCode,
+          toolName,
+          tenantId: input.context.tenantId,
+          outcome: "null",
+          reason: "financial_gateway_no_data",
+          latencyMsGateway: Date.now() - startedAt,
+        });
         return {
           status: "null",
           sourceType: "live_data",
@@ -189,6 +231,13 @@ export async function executeIntentLibraryTool(
         };
       }
 
+      logToolAccess({
+        intentCode: input.intent.intentCode,
+        toolName,
+        tenantId: input.context.tenantId,
+        outcome: "success",
+        latencyMsGateway: Date.now() - startedAt,
+      });
       return {
         status: "success",
         sourceType: "live_data",
@@ -203,6 +252,14 @@ export async function executeIntentLibraryTool(
         },
       };
     } catch {
+      logToolAccess({
+        intentCode: input.intent.intentCode,
+        toolName,
+        tenantId: input.context.tenantId,
+        outcome: "error",
+        reason: "financial_gateway_exception",
+        latencyMsGateway: Date.now() - startedAt,
+      });
       return {
         status: "error",
         sourceType: "live_data",
@@ -213,6 +270,14 @@ export async function executeIntentLibraryTool(
   }
 
   if (!input.readOnlyQueryGateway) {
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "error",
+      reason: "readonly_gateway_missing",
+      latencyMsGateway: Date.now() - startedAt,
+    });
     return {
       status: "error",
       sourceType: "live_data",
@@ -222,6 +287,31 @@ export async function executeIntentLibraryTool(
   }
 
   if (!isSupportedReadOnlyTool(toolName)) {
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "error",
+      reason: "unsupported_readonly_tool",
+      latencyMsGateway: Date.now() - startedAt,
+    });
+    return {
+      status: "error",
+      sourceType: "live_data",
+      latencyMsGateway: Date.now() - startedAt,
+      data: {},
+    };
+  }
+
+  if (!input.context.tenantId) {
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "error",
+      reason: "missing_tenant_id",
+      latencyMsGateway: Date.now() - startedAt,
+    });
     return {
       status: "error",
       sourceType: "live_data",
@@ -235,12 +325,20 @@ export async function executeIntentLibraryTool(
     question: input.question,
     context: input.context,
     toolName: toolName as BuildingOSReadOnlyQueryInput["toolName"],
-    toolInput: buildToolInput(input.entities),
+    toolInput: buildToolInput(input.intent.intentCode, input.entities),
   };
 
   try {
     const gatewayResult = await input.readOnlyQueryGateway.query(queryInput);
     if (!gatewayResult) {
+      logToolAccess({
+        intentCode: input.intent.intentCode,
+        toolName,
+        tenantId: input.context.tenantId,
+        outcome: "null",
+        reason: "readonly_gateway_no_data",
+        latencyMsGateway: Date.now() - startedAt,
+      });
       return {
         status: "null",
         sourceType: "live_data",
@@ -250,6 +348,13 @@ export async function executeIntentLibraryTool(
       };
     }
 
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "success",
+      latencyMsGateway: Date.now() - startedAt,
+    });
     return {
       status: "success",
       sourceType: "live_data",
@@ -258,6 +363,14 @@ export async function executeIntentLibraryTool(
       gatewayResult,
     };
   } catch {
+    logToolAccess({
+      intentCode: input.intent.intentCode,
+      toolName,
+      tenantId: input.context.tenantId,
+      outcome: "error",
+      reason: "readonly_gateway_exception",
+      latencyMsGateway: Date.now() - startedAt,
+    });
     return {
       status: "error",
       sourceType: "live_data",
