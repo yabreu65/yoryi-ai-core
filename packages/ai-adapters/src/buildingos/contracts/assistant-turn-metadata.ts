@@ -1,3 +1,5 @@
+import type { GatewayOutcome, FallbackPath } from "../observability/enums";
+
 export const ASSISTANT_RESOLVED_LEVELS = [
   "P0",
   "P1",
@@ -9,15 +11,11 @@ export const ASSISTANT_RESOLVED_LEVELS = [
 
 export type AssistantResolvedLevel = (typeof ASSISTANT_RESOLVED_LEVELS)[number];
 
-export type AssistantTurnGatewayOutcome =
-  | "success"
-  | "null"
-  | "error"
-  | "denied"
-  | "unavailable"
-  | "timeout"
-  | "contract_mismatch"
-  | "invalid_payload";
+export { GATEWAY_OUTCOMES } from "../observability/enums";
+export { FALLBACK_PATHS } from "../observability/enums";
+export type { GatewayOutcome, FallbackPath } from "../observability/enums";
+
+export type AssistantTurnGatewayOutcome = GatewayOutcome;
 
 export type AssistantTurnCompletedMetadata = {
   traceId: string;
@@ -30,7 +28,7 @@ export type AssistantTurnCompletedMetadata = {
   resolvedLevel: AssistantResolvedLevel;
   resolvedIntentCode?: string;
   toolName?: string;
-  fallbackPath: string;
+  fallbackPath: FallbackPath;
   gatewayOutcome: AssistantTurnGatewayOutcome;
   latencyMsTotal: number;
   latencyMsRouting: number;

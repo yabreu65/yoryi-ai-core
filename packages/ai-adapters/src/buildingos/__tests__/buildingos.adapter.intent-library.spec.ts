@@ -66,8 +66,8 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result?.answer).toContain("$ 12.500,75");
     expect(result?.metadata?.intentLibraryMatched).toBe(true);
     expect(result?.metadata?.intentLibraryIntentCode).toBe("GET_UNIT_DEBT");
-    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_success");
-    expect(result?.metadata?.gatewayOutcome).toBe("success");
+    expect(result?.metadata?.fallbackPath).toBe("cache_miss");
+    expect(result?.metadata?.gatewayOutcome).toBe("cache_miss");
     expect(result?.metadata?.resolvedLevel).toBe("P0");
     expect(typeof result?.metadata?.latencyMsGateway).toBe("number");
     expect(queryMock).toHaveBeenCalledTimes(1);
@@ -180,7 +180,7 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result?.metadata?.intentLibraryIntentCode).toBe(
       "GET_BUILDING_DEBT_TREND"
     );
-    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_success");
+    expect(result?.metadata?.fallbackPath).toBe("cache_miss");
     expect(result?.metadata?.resolvedLevel).toBe("P0");
     expect(queryMock).toHaveBeenCalledTimes(1);
     expect(queryMock.mock.calls[0]?.[0]?.intentCode).toBe(
@@ -243,6 +243,67 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     expect(result?.metadata?.clarificationAsked).toBe(true);
     expect(result?.metadata?.missingEntities).toContain("buildingId");
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("cache hit: no llama gateway y metadata cache_hit", async () => {
+    const queryMock = vi
+      .fn<BuildingOSReadOnlyQueryGateway["query"]>()
+      .mockResolvedValue({
+        answer: "gateway-answer",
+        metadata: {
+          amount: 12500.75,
+          currency: "ARS",
+          asOf: "2026-04-29",
+        },
+      });
+
+    const adapter = new BuildingOSAdapter({
+      readOnlyQueryGateway: { query: queryMock },
+    });
+
+    const first = await adapter.resolveDataBackedAnswer({
+      question: "cuanto debo hoy en mi unidad",
+      context: { ...RESIDENT_CONTEXT },
+    });
+    expect(first?.metadata?.gatewayOutcome).toBe("cache_miss");
+
+    const second = await adapter.resolveDataBackedAnswer({
+      question: "cuanto debo hoy en mi unidad",
+      context: { ...RESIDENT_CONTEXT },
+    });
+
+    expect(second).not.toBeNull();
+    expect(second?.metadata?.gatewayOutcome).toBe("cache_hit");
+    expect(second?.metadata?.fallbackPath).toBe("cache_hit");
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("aislamiento tenant: cache key incluye tenantId", async () => {
+    const queryMock = vi
+      .fn<BuildingOSReadOnlyQueryGateway["query"]>()
+      .mockResolvedValue({
+        answer: "gateway-answer",
+        metadata: {
+          amount: 12500.75,
+          currency: "ARS",
+          asOf: "2026-04-29",
+        },
+      });
+
+    const adapter = new BuildingOSAdapter({
+      readOnlyQueryGateway: { query: queryMock },
+    });
+
+    await adapter.resolveDataBackedAnswer({
+      question: "cuanto debo hoy en mi unidad",
+      context: { ...RESIDENT_CONTEXT, tenantId: "tenant-1" },
+    });
+    await adapter.resolveDataBackedAnswer({
+      question: "cuanto debo hoy en mi unidad",
+      context: { ...RESIDENT_CONTEXT, tenantId: "tenant-2" },
+    });
+
+    expect(queryMock).toHaveBeenCalledTimes(2);
   });
 
   it("ADMIN enforcement ON + tool null => respuesta controlada sin fallbacks libres", async () => {

@@ -26,7 +26,12 @@ import type {
   AssistantResolvedLevel,
   AssistantTurnCompletedMetadata,
   AssistantTurnGatewayOutcome,
+  FALLBACK_PATHS,
 } from "./contracts/assistant-turn-metadata";
+import {
+  assertFallbackPath,
+  assertGatewayOutcome,
+} from "./observability/enums";
 import {
   type BuildingOSCanonicalIntentCode,
   getBuildingOSIntentDefinition,
@@ -40,6 +45,10 @@ import {
   renderCanonicalTemplate,
 } from "./intent-library/tool-executor";
 import type { IntentLibraryIntent } from "./intent-library/schema";
+import { validateEntities, EntityValidationResult } from "./intent-library/entity-validator";
+import { BuildingOSEntityLookupGateway } from "./intent-library/entity-lookup-gateway";
+import { AnswerCache } from "./cache/answer-cache";
+import { ttlForIntent } from "./cache/cache-config";
 
 export type BuildingOSAdapterOptions = {
   financialGateway?: BuildingOSFinancialGateway;
@@ -216,6 +225,7 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
   private readonly p2Router = new BuildingOSP2Router();
   private readonly p2bRouter = new BuildingOSP2BRouter();
   private readonly p3Router = new BuildingOSP3Router();
+  private readonly answerCache: AnswerCache;
 
   private readonly pendingClarifications = new Map<string, PendingClarification>();
   private static readonly CLARIFICATION_TTL_MS = 5 * 60 * 1000;
@@ -223,6 +233,7 @@ export class BuildingOSAdapter implements SaasAssistantAdapter {
   constructor(options: BuildingOSAdapterOptions = {}) {
     this.financialGateway = options.financialGateway;
     this.readOnlyQueryGateway = options.readOnlyQueryGateway;
+    this.answerCache = new AnswerCache();
   }
 
   private getSessionId(context: ResolvedAssistantContext): string | undefined {
@@ -380,7 +391,19 @@ private getAndValidatePendingClarification(
               : options?.p3Routed
                 ? "P3"
                 : "FALLBACK");
-    const gatewayOutcome = options?.gatewayOutcome ?? "success";
+    const rawGatewayOutcome = options?.gatewayOutcome ?? "success";
+    const rawFallbackPath =
+      options?.fallbackPath ??
+      contextIntentLibraryState?.fallbackPath ??
+      "none";
+    const gatewayOutcome = assertGatewayOutcome(
+      rawGatewayOutcome,
+      `buildMetadata:${context.tenantId}`
+    );
+    const fallbackPath = assertFallbackPath(
+      rawFallbackPath,
+      `buildMetadata:${context.tenantId}`
+    );
     const latencyMsTotal = Math.max(0, options?.latencyMsTotal ?? 0);
     const latencyMsRouting = Math.max(
       0,
@@ -398,10 +421,7 @@ private getAndValidatePendingClarification(
       resolvedLevel,
       resolvedIntentCode: options?.resolvedIntentCode ?? intentCode,
       toolName: options?.toolName,
-      fallbackPath:
-        options?.fallbackPath ??
-        contextIntentLibraryState?.fallbackPath ??
-        "none",
+      fallbackPath,
       gatewayOutcome,
       latencyMsTotal,
       latencyMsRouting,
@@ -866,16 +886,127 @@ private getAndValidatePendingClarification(
           };
         }
 
+        const tenantId = context.tenantId;
+        if (!tenantId) {
+          return null;
+        }
+
+        const cacheEntities: Record<string, string> = Object.fromEntries(
+          Object.entries(entities).filter(([, value]) => typeof value === "string") as Array<
+            [string, string]
+          >
+        );
+
+        // Build cache key for this intent execution
+        const cacheKey = this.answerCache.buildCacheKey({
+          tenantId,
+          role: context.role,
+          intentCode: intentEntry.intentCode,
+          entities: cacheEntities,
+        });
+
+        // Try to get from cache first
+        const cachedResult = await this.answerCache.get(cacheKey);
+        if (cachedResult !== null) {
+          // Cache hit - return cached response with cache_hit metadata
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: false,
+            missingEntities: [],
+            fallbackPath: "cache_hit",
+          };
+          this.setIntentLibraryState(context, state);
+          return {
+            answer: cachedResult.answer,
+            actions: cachedResult.actions ?? [],
+            metadata: this.buildObservabilityMetadata(
+              context,
+              intentEntry.intentCode,
+              "live_data",
+              {
+                gatewayOutcome: "cache_hit",
+                resolvedLevel: intentEntry.level,
+                resolvedIntentCode: intentEntry.intentCode,
+                fallbackPath: "cache_hit",
+                responseType: cachedResult.metadata?.responseType as "answer" | "clarification" | "error" | "no_data" ?? "answer",
+                p0Routed: intentEntry.level === "P0",
+                p1Routed: intentEntry.level === "P1",
+                intentLibraryMatched: true,
+                intentLibraryConfidence: match.confidence,
+                intentLibraryIntentCode: intentEntry.intentCode,
+                clarificationAsked: false,
+                missingEntities: [],
+                authorizationDenied: false,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Date.now() - turnStartedAt,
+                // Note: We don't have latency from cache, but we could track it separately if needed
+              }
+            ),
+          };
+        }
+
+        // Cache miss - continue with validation and tool execution
+        // Validate entities before executing the tool
+        if (!this.readOnlyQueryGateway) {
+          return null;
+        }
+
+        const entityLookupGateway = new BuildingOSEntityLookupGateway();
+        
+        const validationResult = await validateEntities({
+          intentCode: intentEntry.intentCode,
+          context,
+          extractedEntities: entities,
+          requiredEntities: intentEntry.requiredEntities,
+          entityLookupGateway,
+        });
+
+        if (!validationResult.ok) {
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: true,
+            missingEntities: validationResult.missingEntities,
+            fallbackPath: "invalid_entities",
+          };
+          this.setIntentLibraryState(context, state);
+          return {
+            answer: validationResult.reason,
+            actions: [],
+            metadata: this.buildObservabilityMetadata(
+              context,
+              intentEntry.intentCode,
+              "live_data",
+              {
+                gatewayOutcome: "invalid_entities",
+                resolvedLevel: intentEntry.level,
+                resolvedIntentCode: intentEntry.intentCode,
+                fallbackPath: "invalid_entities",
+                responseType: "clarification",
+                p0Routed: intentEntry.level === "P0",
+                p1Routed: intentEntry.level === "P1",
+                intentLibraryMatched: true,
+                intentLibraryConfidence: match.confidence,
+                intentLibraryIntentCode: intentEntry.intentCode,
+                clarificationAsked: true,
+                missingEntities: validationResult.missingEntities,
+                authorizationDenied: false,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Date.now() - turnStartedAt,
+              }
+            ),
+          };
+        }
+
         const execution = await executeIntentLibraryTool({
           intent: intentEntry,
           context,
           question,
-          entities,
+          entities: validationResult.normalizedEntities,
           readOnlyQueryGateway: this.readOnlyQueryGateway,
           financialGateway: this.financialGateway,
         });
 
-        if (execution.status === "success") {
+if (execution.status === "success") {
           const outputMapping = intentEntry.toolBinding?.outputMapping ?? {};
           const rendered = renderCanonicalTemplate(
             context.role === "RESIDENT"
@@ -892,6 +1023,17 @@ private getAndValidatePendingClarification(
             fallbackPath: "intent_library_tool_success",
           };
           this.setIntentLibraryState(context, state);
+          
+          // Cache the successful result
+          const ttlSeconds = ttlForIntent(intentEntry.intentCode);
+          await this.answerCache.set(cacheKey, {
+            answer: rendered.answer,
+            actions:
+              execution.gatewayResult?.actions?.length
+                ? execution.gatewayResult.actions
+                : [],
+          }, ttlSeconds);
+          
           return {
             answer: rendered.answer,
             actions:
@@ -903,10 +1045,10 @@ private getAndValidatePendingClarification(
               intentEntry.intentCode,
               "live_data",
               {
-                gatewayOutcome: "success",
+                gatewayOutcome: "cache_miss",
                 resolvedLevel: intentEntry.level,
                 resolvedIntentCode: intentEntry.intentCode,
-                fallbackPath: "intent_library_tool_success",
+                fallbackPath: "cache_miss",
                 responseType: "exact",
                 p0Routed: intentEntry.level === "P0",
                 p1Routed: intentEntry.level === "P1",
@@ -915,6 +1057,7 @@ private getAndValidatePendingClarification(
                 intentLibraryIntentCode: intentEntry.intentCode,
                 clarificationAsked: false,
                 missingEntities: [],
+                authorizationDenied: false,
                 latencyMsGateway: execution.latencyMsGateway,
                 latencyMsTotal: Date.now() - turnStartedAt,
                 latencyMsRouting: Math.max(
@@ -3136,6 +3279,19 @@ private getAndValidatePendingClarification(
     _tenantId?: string,
     role?: string
   ): Promise<string[]> {
+    const normalizedRole = (role ?? "").toUpperCase();
+    const allowedRoles = new Set([
+      "SUPER_ADMIN",
+      "TENANT_OWNER",
+      "TENANT_ADMIN",
+      "OPERATOR",
+      "RESIDENT",
+    ]);
+
+    if (!allowedRoles.has(normalizedRole)) {
+      return [];
+    }
+
     const allPermissions = [
       "buildings.read",
       "buildings.write",
@@ -3179,11 +3335,11 @@ private getAndValidatePendingClarification(
       "documents.read",
     ];
 
-    if (role === "RESIDENT") {
+    if (normalizedRole === "RESIDENT") {
       return residentPermissions;
     }
 
-    if (role === "OPERATOR") {
+    if (normalizedRole === "OPERATOR") {
       return operatorPermissions;
     }
 

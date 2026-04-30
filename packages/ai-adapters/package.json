@@ -23,7 +23,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@yoryi/ai-types": "*"
+    "@yoryi/ai-types": "*",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
