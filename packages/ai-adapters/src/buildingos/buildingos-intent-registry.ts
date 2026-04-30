@@ -12,7 +12,12 @@ export type BuildingOSCanonicalIntentCode =
   | "GET_DEBT_AGING"
   | "GET_DEBT_BY_TOWER"
   | "GET_UNIT_BALANCE_BY_PERIOD"
-  | "GET_URGENT_UNASSIGNED_TICKETS";
+  | "GET_URGENT_UNASSIGNED_TICKETS"
+  | "GET_COLLECTIONS_TREND"
+  | "GET_UNIT_DEBT_TREND"
+  | "GET_BUILDING_DEBT_TREND"
+  | "CROSS_QUERY"
+  | "SEARCH_PROCESSES";
 
 export type BuildingOSLegacyIntentAlias =
   | "admin_arrears_by_building"
@@ -490,8 +495,8 @@ const aliasToCanonical = new Map<BuildingOSLegacyIntentAlias, BuildingOSCanonica
 
 export function getBuildingOSIntentDefinition(
   code: BuildingOSCanonicalIntentCode
-): BuildingOSIntentDefinition {
-  return intentByCode.get(code)!;
+): BuildingOSIntentDefinition | undefined {
+  return intentByCode.get(code);
 }
 
 export function getBuildingOSIntentDefinitions(): readonly BuildingOSIntentDefinition[] {

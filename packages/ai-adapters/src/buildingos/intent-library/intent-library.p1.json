@@ -1,0 +1,482 @@
+{
+  "version": 1,
+  "level": "P1",
+  "intents": [
+    {
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "audience": "RESIDENT",
+      "utterances": [
+        "cual fue mi ultimo pago registrado",
+        "mostrar ultimo comprobante acreditado",
+        "cuando impacto mi ultimo pago",
+        "detalle del pago mas reciente",
+        "necesito ver fecha del ultimo cobro aplicado",
+        "monto del ultimo pago confirmado",
+        "ultimo recibo validado de expensas",
+        "consulta de ultimo pago residente",
+        "quiero revisar mi pago mas nuevo",
+        "estado final del ultimo pago informado"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tu último pago fue el {{lastPaymentDate}} por {{lastPaymentAmount}} (estado: {{status}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Querés el último pago global o de un período puntual?"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_payments",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "lastPaymentDate": "lastPaymentDate",
+          "lastPaymentAmount": "lastPaymentAmount",
+          "currency": "currency",
+          "status": "status",
+          "receiptNumber": "receiptNumber"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "audience": "RESIDENT",
+      "utterances": [
+        "estado de cuenta del periodo actual",
+        "saldo por periodo de mi unidad",
+        "resumen mensual de cargos y pagos",
+        "cuenta corriente por mes",
+        "balance de expensas por periodo",
+        "quiero estado de cuenta de abril",
+        "historial de saldos por periodo",
+        "consulta de deuda por mes especifico",
+        "detalle de cuenta para un periodo",
+        "cierre de cuenta del periodo elegido"
+      ],
+      "canonicalAnswer": {
+        "resident": "En {{period}}, tu saldo final es {{amount}} (cargos: {{chargesAmount}}, pagos: {{paymentsAmount}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Qué período querés consultar? (formato YYYY-MM)",
+        "missingUnitId": "Si administrás más de una unidad, ¿sobre cuál período lo consulto?"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_balance_by_period",
+        "requiredPermissions": [
+          "charges.read",
+          "payments.read"
+        ],
+        "outputMapping": {
+          "period": "period",
+          "amount": "amount",
+          "currency": "currency",
+          "chargesAmount": "chargesAmount",
+          "paymentsAmount": "paymentsAmount",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "audience": "BOTH",
+      "utterances": [
+        "que pasa si pago tarde la expensa",
+        "como se calcula mora por atraso",
+        "dias de mora de mi deuda actual",
+        "impacto de pagar fuera de termino",
+        "penalidad por atraso en expensas",
+        "antiguedad de deuda vencida por tramos",
+        "recargos por demora en pagos",
+        "riesgo de mora si no pago hoy",
+        "clasificacion de deuda por antiguedad",
+        "analisis aging para deuda pendiente"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tu aging muestra {{overdueAmount}} vencidos y {{amount}} totales al {{asOf}}.",
+        "admin": "Voy a devolver aging de deuda por tramos para seguimiento de mora."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Querés aging a fecha de hoy o a cierre de un período específico?"
+      },
+      "toolBinding": {
+        "toolName": "analytics_debt_aging",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "overdueAmount": "overdueAmount",
+          "amount": "amount",
+          "currency": "currency",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "audience": "RESIDENT",
+      "utterances": [
+        "evolucion de mi deuda en los ultimos meses",
+        "tendencia de saldo adeudado por unidad",
+        "deuda historica mensual de mi departamento",
+        "como viene cambiando mi deuda",
+        "serie temporal de deuda residente",
+        "deuda comparada mes a mes",
+        "trayectoria de deuda en el ultimo semestre",
+        "grafico de deuda acumulada por periodo",
+        "variacion de deuda durante el ano",
+        "tendencia de cuanto debo en el tiempo"
+      ],
+      "canonicalAnswer": {
+        "resident": "La tendencia de deuda en {{periodRange}} cerró en {{amount}} con variación {{trendDelta}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId",
+        "unitId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingUnitId": "¿Sobre qué unidad querés ver la tendencia de deuda?",
+        "missingPeriod": "¿Qué ventana temporal querés usar? (ej: últimos 6 meses)"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "periodRange": "periodRange",
+          "amount": "amount",
+          "currency": "currency",
+          "trendDelta": "trendDelta"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "audience": "RESIDENT",
+      "utterances": [
+        "historial de pagos aplicados de mi unidad",
+        "tendencia de cobranzas ya pagadas",
+        "evolucion de montos que fui pagando",
+        "pagos acreditados por mes historico",
+        "como se distribuyeron mis pagos en el tiempo",
+        "serie de pagos confirmados mensuales",
+        "progreso de pagos realizados en el ano",
+        "tendencia de pagos efectivos del residente",
+        "comparativa mensual de pagos aplicados",
+        "historia de cobranzas cobradas por mi unidad"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tus pagos acreditados en {{periodRange}} suman {{amount}} (último: {{lastPaymentDate}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId",
+        "unitId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingUnitId": "¿Qué unidad querés usar para el historial de pagos?",
+        "missingPeriod": "¿Querés historial anual completo o un rango de meses puntual?"
+      },
+      "toolBinding": {
+        "toolName": "get_collections_trend",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "periodRange": "periodRange",
+          "amount": "amount",
+          "currency": "currency",
+          "lastPaymentDate": "lastPaymentDate"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "tendencia de morosidad del edificio ultimos meses",
+        "evolucion de unidades vencidas del edificio",
+        "como viene la mora del edificio en el tiempo",
+        "necesito curva de morosidad mensual",
+        "mostrar tendencia de vencidos por edificio",
+        "analisis historico de morosos del edificio",
+        "variacion mensual de morosidad edificio",
+        "comparativa temporal de mora del consorcio",
+        "seguimiento de morosidad por periodo",
+        "progresion de unidades en mora edificio"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Tendencia de morosidad: {{overdueTrendDelta}} en {{periodRange}} (vencidos actuales {{overdueUnits}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés analizar para tendencia de morosidad?",
+        "missingPeriod": "¿Qué rango temporal querés para la tendencia de morosidad?"
+      },
+      "toolBinding": {
+        "toolName": "get_building_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "overdueTrendDelta": "trendDelta",
+          "periodRange": "periodRange",
+          "overdueUnits": "overdueUnits",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_BUILDING_TREND_LAST_YEAR",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "tendencia de deuda del edificio en el ultimo ano",
+        "evolucion anual de deuda del edificio",
+        "analisis de deuda ultimos 12 meses building",
+        "comparar deuda del edificio mes a mes anual",
+        "como cerro la deuda del edificio el ultimo ano",
+        "proyeccion basada en tendencia anual de deuda",
+        "historico anual de deuda del consorcio",
+        "curva anual de deuda total del edificio",
+        "variacion anual de deuda por periodo",
+        "resumen anual de tendencia de deuda"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Tendencia anual de deuda: {{annualDebtDelta}} en {{periodRange}} con cierre {{closingDebt}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Sobre qué edificio querés ver la tendencia anual de deuda?",
+        "missingPeriod": "Indicá período base para calcular la tendencia anual (ej: últimos 12 meses)."
+      },
+      "toolBinding": {
+        "toolName": "get_building_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "annualDebtDelta": "trendDelta",
+          "periodRange": "periodRange",
+          "closingDebt": "amount",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_12MONTH_TREND",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "tendencia deuda ultimos n meses del edificio",
+        "quiero deuda rolling de los ultimos meses",
+        "mostrar tendencia de deuda configurable por meses",
+        "dame evolutivo de deuda n periodos",
+        "analisis de deuda para ventana movil mensual",
+        "comparacion de deuda en n meses recientes",
+        "curva de deuda para los ultimos meses elegidos",
+        "resumen de deuda con horizonte n meses",
+        "variacion de deuda en ventana temporal n",
+        "seguimiento deuda por cantidad de meses"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Tendencia en {{periodRange}}: deuda {{currentDebt}} con variación {{trendDelta}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés analizar para tendencia de N meses?",
+        "missingPeriod": "¿Cuál es la ventana de meses que querés usar?"
+      },
+      "toolBinding": {
+        "toolName": "get_building_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "periodRange": "periodRange",
+          "currentDebt": "amount",
+          "trendDelta": "trendDelta",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "balance por periodo del edificio cobrado vs pendiente",
+        "necesito tendencia de cobranzas por periodo",
+        "mostrar evolucion de cobros del edificio",
+        "comparar montos cobrados por mes del edificio",
+        "analisis de collections trend por periodo",
+        "resumen de cobranzas historicas building",
+        "variacion mensual de cobros y recupero",
+        "dame curva de cobranza del consorcio",
+        "seguimiento de ingresos por pagos en el tiempo",
+        "performance de cobranzas por mes"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Balance de cobranzas en {{periodRange}}: cobrado {{collectedAmount}}, pendiente {{pendingAmount}}, tasa {{collectionRate}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés analizar en balance por período?",
+        "missingPeriod": "¿Qué período querés usar para el balance de cobranzas?"
+      },
+      "toolBinding": {
+        "toolName": "get_collections_trend",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "periodRange": "periodRange",
+          "collectedAmount": "amount",
+          "pendingAmount": "pendingAmount",
+          "collectionRate": "collectionRate",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_COLLECTION_RATE_TREND",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "comparar torre a vs torre b en morosidad y cobro",
+        "necesito comparativa de torres por performance de pago",
+        "mostrar diferencia de tasa de cobranza entre torres",
+        "analisis torre a contra torre b en deuda",
+        "cual torre tiene peor recupero de pagos",
+        "comparacion de cobrabilidad por torre",
+        "benchmark de torres en morosidad",
+        "resumen comparativo de torres por deuda y cobro",
+        "panel de comparacion torre vs torre",
+        "variacion de collection rate entre torres"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Comparación de torres: {{towerAName}} tasa {{towerACollectionRate}} vs {{towerBName}} tasa {{towerBCollectionRate}} (período {{periodRange}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "towerId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "Indicame edificio y torres a comparar para el análisis A vs B.",
+        "missingPeriod": "¿Qué período querés usar para comparar Torre A vs Torre B?",
+        "missingTowerId": "¿Qué torre querés usar para esta consulta?"
+      },
+      "toolBinding": {
+        "toolName": "analytics_debt_by_tower",
+        "requiredPermissions": [
+          "charges.read",
+          "payments.read"
+        ],
+        "outputMapping": {
+          "towerAName": "towerAName",
+          "towerACollectionRate": "towerACollectionRate",
+          "towerBName": "towerBName",
+          "towerBCollectionRate": "towerBCollectionRate",
+          "periodRange": "periodRange"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_UNIT_CHARGED_TREND",
+      "level": "P1",
+      "audience": "ADMIN",
+      "utterances": [
+        "unidades con mayor crecimiento de deuda",
+        "cuales unidades empeoraron mas su deuda",
+        "mostrar top crecimiento de deuda por unidad",
+        "necesito ranking de unidades con mayor aumento de cargos",
+        "analisis de crecimiento de deuda unitaria",
+        "variacion de deuda por unidad en el periodo",
+        "que unidades crecieron mas en deuda",
+        "dame unidades con salto de deuda relevante",
+        "seguimiento de crecimiento de deuda unitario",
+        "comparativa de incremento de deuda por unidad"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Unidades con mayor crecimiento de deuda: {{growthUnitsCount}} casos, incremento total {{growthAmount}} en {{periodRange}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés evaluar para crecimiento de deuda por unidad?",
+        "missingPeriod": "¿Qué período querés usar para medir crecimiento de deuda?"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "growthUnitsCount": "growthUnitsCount",
+          "growthAmount": "growthAmount",
+          "periodRange": "periodRange",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    }
+  ]
+}

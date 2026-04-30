@@ -73,7 +73,7 @@
     {
       "intentCode": "GET_UNIT_DEBT",
       "toolName": "get_unit_balance",
-      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad"],
+      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad", "saldo pendiente", "adeuda", "adeudada", "adeudadas", "expensas adeudadas", "al dia", "al día", "debe la unidad"],
       "toolInput": {
         "debtStatus": "OVERDUE"
       }

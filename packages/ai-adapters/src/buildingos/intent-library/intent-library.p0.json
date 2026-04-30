@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "level": "P0",
+  "intents": [
+    {
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "audience": "RESIDENT",
+      "utterances": [
+        "cuanto debo hoy en mi unidad",
+        "necesito saber mi deuda total actual",
+        "decime el saldo pendiente de expensas ahora",
+        "mi departamento tiene deuda hoy",
+        "quiero confirmar si estoy al dia con pagos",
+        "mostrame la deuda vigente de mi cuenta",
+        "saldo total adeudado al momento",
+        "cuanto tengo que pagar hoy mismo",
+        "consulta deuda actual residente",
+        "estado deuda actual de mi unidad"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tu deuda actual es {{amount}} (corte: {{asOf}}). Estado: {{status}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId",
+        "unitId"
+      ],
+      "clarificationQuestions": {
+        "missingUnitId": "¿Sobre qué unidad querés consultar la deuda actual?"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_balance",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "amount": "amount",
+          "currency": "currency",
+          "asOf": "asOf",
+          "status": "status",
+          "overdueAmount": "overdueAmount",
+          "dueDate": "dueDate"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "audience": "BOTH",
+      "utterances": [
+        "tengo pagos pendientes por confirmar",
+        "lista de pagos pendientes de acreditacion",
+        "que pagos siguen en revision",
+        "pagos enviados todavia no aprobados",
+        "mostrar transferencias pendientes",
+        "que medios de pago tengo habilitados hoy",
+        "necesito revisar pendientes de pago y canal de pago",
+        "hay pagos sin aprobar de mi cuenta",
+        "estado de pagos pendientes este mes",
+        "pendientes de pago para residente"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tenés {{pendingCount}} pagos pendientes por {{pendingAmount}}. Última actualización: {{asOf}}.",
+        "admin": "Voy a listar pagos pendientes con estado para revisión operativa."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Querés ver pendientes de un período puntual o todos los pendientes actuales?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "pendingCount": "pendingCount",
+          "pendingAmount": "pendingAmount",
+          "currency": "currency",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "audience": "BOTH",
+      "utterances": [
+        "tengo deuda vencida en mi unidad",
+        "mi cuenta entro en mora",
+        "hay montos vencidos para pagar",
+        "mostrar deuda expirada del periodo",
+        "quiero saber si tengo vencimientos atrasados",
+        "consulta de deuda en mora residente",
+        "saldo vencido de expensas actuales",
+        "deuda atrasada con interes aplicado",
+        "ver obligaciones vencidas de mi cuenta",
+        "pendientes vencidos de mi departamento"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tu deuda vencida es {{overdueAmount}} (total adeudado: {{amount}}). Próximo vencimiento: {{dueDate}}.",
+        "admin": "Voy a devolver unidades con deuda vencida y su severidad de mora."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId",
+        "unitId",
+        "buildingId"
+      ],
+      "clarificationQuestions": {
+        "missingUnitId": "¿Qué unidad querés revisar para deuda vencida?",
+        "missingBuildingId": "Si aplica, ¿de qué edificio/torre querés consultar la mora?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read",
+          "charges.read"
+        ],
+        "outputMapping": {
+          "overdueAmount": "overdueAmount",
+          "amount": "amount",
+          "currency": "currency",
+          "dueDate": "dueDate",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "audience": "BOTH",
+      "utterances": [
+        "subi pago pero sin comprobante",
+        "pagos que no tienen recibo cargado",
+        "faltan comprobantes en mis pagos",
+        "estado de pagos sin evidencia",
+        "transferencias sin adjunto de respaldo",
+        "quiero ver pagos sin ticket de comprobacion",
+        "pagos enviados sin foto de comprobante",
+        "necesito detectar faltantes de recibo",
+        "lista de pagos sin prueba",
+        "sin comprobante en reportes de pago"
+      ],
+      "canonicalAnswer": {
+        "resident": "Tenés {{paymentsWithoutProof}} pagos sin comprobante. Último detectado: {{lastDetectedAt}}.",
+        "admin": "Voy a devolver pagos sin comprobante para gestión operativa."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Querés revisar pagos sin comprobante de este mes o de otro período?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "paymentsWithoutProof": "paymentsWithoutProof",
+          "lastDetectedAt": "lastDetectedAt",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "audience": "BOTH",
+      "utterances": [
+        "hoy me rechazaron un pago",
+        "pagos rechazados en el dia",
+        "estado rechazo de transferencia reciente",
+        "quiero saber si hubo pagos rechazados hoy",
+        "rechazos de pago de esta jornada",
+        "comprobantes observados y rechazados hoy",
+        "alerta de pagos denegados recientes",
+        "revision de rechazos en pagos diarios",
+        "detalle de pagos rechazados hoy",
+        "me devolvieron un pago reportado"
+      ],
+      "canonicalAnswer": {
+        "resident": "Hoy registrás {{rejectedCount}} pagos rechazados por {{rejectedAmount}}. Motivo más reciente: {{lastRejectionReason}}.",
+        "admin": "Voy a listar pagos rechazados de hoy con causa operativa."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "userId"
+      ],
+      "clarificationQuestions": {
+        "missingPeriod": "¿Querés revisar solo hoy o incluir también ayer para contraste?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "rejectedCount": "rejectedCount",
+          "rejectedAmount": "rejectedAmount",
+          "currency": "currency",
+          "lastRejectionReason": "lastRejectionReason",
+          "asOf": "asOf"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "cual es la deuda total del edificio hoy",
+        "necesito deuda consolidada del edificio principal",
+        "mostrar saldo total adeudado del consorcio",
+        "dame deuda global del edificio al corte actual",
+        "cuanto debe el edificio completo ahora",
+        "resumen operativo de deuda total del edificio",
+        "consulta rapida deuda total edificio",
+        "quiero ver deuda acumulada del edificio en tiempo real",
+        "deuda total del edificio por administracion",
+        "indicame monto de deuda general del edificio"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Deuda total del edificio: {{totalDebt}} (vencida: {{overdueDebt}}) al {{asOf}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿De qué edificio querés consultar la deuda total?",
+        "missingPeriod": "¿Qué período o fecha de corte querés usar para el total de deuda?"
+      },
+      "toolBinding": {
+        "toolName": "get_building_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "totalDebt": "amount",
+          "overdueDebt": "overdueAmount",
+          "asOf": "asOf",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "mostrar morosidad de unidades vencidas del edificio",
+        "cuantas unidades estan vencidas hoy en el edificio",
+        "necesito estado operativo de morosos por edificio",
+        "dame unidades con deuda vencida activas",
+        "listado inmediato de morosidad por unidad",
+        "consulta de unidades vencidas en edificio",
+        "quiero ver mora actual del edificio por unidades",
+        "morosos activos hoy en el consorcio",
+        "panel operativo de vencidos por unidad",
+        "cantidad de unidades en mora del edificio"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Morosidad del edificio: {{overdueUnits}} unidades vencidas por {{overdueDebt}} (corte {{asOf}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés revisar para morosidad de unidades vencidas?",
+        "missingPeriod": "¿Querés morosidad de hoy o de un período específico?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read",
+          "charges.read"
+        ],
+        "outputMapping": {
+          "overdueUnits": "overdueUnits",
+          "overdueDebt": "overdueAmount",
+          "asOf": "asOf",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "necesito top deudores del edificio",
+        "ranking de unidades mas deudoras hoy",
+        "quienes son los mayores deudores del consorcio",
+        "mostrar top morosos del edificio ahora",
+        "lista de deudores principales por monto",
+        "cuales unidades concentran mas deuda",
+        "top deuda por unidad del edificio",
+        "ordenar deudores del edificio de mayor a menor",
+        "resumen operativo top morosos por unidad",
+        "consulta de top deudores activos edificio"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Top deudores: {{topDebtorsCount}} unidades concentran {{topDebtorsAmount}} de deuda (corte {{asOf}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿De qué edificio querés el ranking de top deudores?",
+        "missingPeriod": "¿Para qué período querés calcular el ranking de top deudores?"
+      },
+      "toolBinding": {
+        "toolName": "get_unit_debt_trend",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "topDebtorsCount": "topDebtorsCount",
+          "topDebtorsAmount": "topDebtorsAmount",
+          "asOf": "asOf",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "deuda vencida por torre del edificio",
+        "necesito deuda por torre a nivel operativo",
+        "mostrar mora por torre ahora",
+        "consulta de deuda torre a torre",
+        "resumen vencidos por cada torre del edificio",
+        "cuanto debe cada torre hoy",
+        "panel operativo deuda por torre",
+        "comparar deuda entre torres del edificio",
+        "dame deuda consolidada por torre",
+        "listame deuda vencida por torre principal"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Deuda por torre: {{towerDebtTotal}} total (torre consultada {{towerName}}) al {{asOf}}."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "towerId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "Indicame edificio y torre para calcular deuda vencida por torre.",
+        "missingPeriod": "¿Qué período querés usar para deuda vencida por torre?",
+        "missingTowerId": "¿Qué torre querés usar para esta consulta?"
+      },
+      "toolBinding": {
+        "toolName": "analytics_debt_by_tower",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "towerDebtTotal": "amount",
+          "towerName": "towerName",
+          "asOf": "asOf",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "aging de deuda del edificio por buckets",
+        "distribucion de deuda 0 30 31 60 61 90 90 mas",
+        "necesito tramos de antiguedad de deuda edificio",
+        "mostrar aging operativo del edificio",
+        "cuales son los buckets de mora del edificio",
+        "dame aging de deuda vencida por rango de dias",
+        "panel de antiguedad de deuda por edificio",
+        "consulta aging building en buckets",
+        "resumen de deuda por tramos de mora",
+        "medicion de aging deuda edificio actual"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Aging del edificio: 0-30 {{bucket0_30}}, 31-60 {{bucket31_60}}, 61-90 {{bucket61_90}}, 90+ {{bucket90_plus}} (corte {{asOf}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿Qué edificio querés analizar en aging de deuda?",
+        "missingPeriod": "¿Qué fecha de corte o período querés para el aging?"
+      },
+      "toolBinding": {
+        "toolName": "analytics_debt_aging",
+        "requiredPermissions": [
+          "charges.read"
+        ],
+        "outputMapping": {
+          "bucket0_30": "bucket0_30",
+          "bucket31_60": "bucket31_60",
+          "bucket61_90": "bucket61_90",
+          "bucket90_plus": "bucket90_plus",
+          "asOf": "asOf",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    },
+    {
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "audience": "ADMIN",
+      "utterances": [
+        "ultimo pago recibido global del edificio",
+        "mostrar ultimo pago ingresado del edificio",
+        "cual fue el ultimo pago acreditado global",
+        "necesito ultimo pago recibido por torre",
+        "dame el pago mas reciente del edificio",
+        "consulta operativa ultimo pago del consorcio",
+        "ultimo pago confirmado en torre a",
+        "pagos recientes global y por torre",
+        "momento del ultimo pago recibido edificio",
+        "cual es la ultima cobranza registrada"
+      ],
+      "canonicalAnswer": {
+        "resident": "Esta consulta es administrativa. Derivo a administración del edificio.",
+        "admin": "Último pago recibido: {{lastPaymentAmount}} el {{lastPaymentDate}} (torre {{towerName}}, estado {{status}})."
+      },
+      "requiredEntities": [
+        "tenantId",
+        "buildingId",
+        "towerId",
+        "period"
+      ],
+      "clarificationQuestions": {
+        "missingBuildingId": "¿De qué edificio querés consultar el último pago recibido?",
+        "missingPeriod": "¿Querés el último pago de hoy, del mes o de otro período?",
+        "missingTowerId": "¿Qué torre querés usar para esta consulta?"
+      },
+      "toolBinding": {
+        "toolName": "search_payments",
+        "requiredPermissions": [
+          "payments.read"
+        ],
+        "outputMapping": {
+          "lastPaymentAmount": "lastPaymentAmount",
+          "lastPaymentDate": "lastPaymentDate",
+          "towerName": "towerName",
+          "status": "status",
+          "currency": "currency"
+        }
+      },
+      "version": 1
+    }
+  ]
+}

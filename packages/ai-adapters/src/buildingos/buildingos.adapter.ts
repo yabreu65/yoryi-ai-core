@@ -22,17 +22,31 @@ import { BuildingOSP1Router } from "./buildingos-p1-router";
 import { BuildingOSP2Router } from "./buildingos-p2-router";
 import { BuildingOSP2BRouter } from "./buildingos-p2b-router";
 import { BuildingOSP3Router } from "./buildingos-p3-router";
+import type {
+  AssistantResolvedLevel,
+  AssistantTurnCompletedMetadata,
+  AssistantTurnGatewayOutcome,
+} from "./contracts/assistant-turn-metadata";
 import {
   type BuildingOSCanonicalIntentCode,
   getBuildingOSIntentDefinition,
 } from "./buildingos-intent-registry";
+import {
+  getIntentLibraryIntent,
+  matchIntent,
+} from "./intent-library/intent-matcher";
+import {
+  executeIntentLibraryTool,
+  renderCanonicalTemplate,
+} from "./intent-library/tool-executor";
+import type { IntentLibraryIntent } from "./intent-library/schema";
 
 export type BuildingOSAdapterOptions = {
   financialGateway?: BuildingOSFinancialGateway;
   readOnlyQueryGateway?: BuildingOSReadOnlyQueryGateway;
 };
 
-type GatewayOutcome = "success" | "denied" | "unavailable" | "timeout" | "contract_mismatch" | "invalid_payload";
+type GatewayOutcome = AssistantTurnGatewayOutcome;
 
 function generateTraceId(): string {
   return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -52,6 +66,15 @@ type PendingClarification = {
     toolName: string;
     toolInput: Record<string, unknown>;
   }>;
+};
+
+type IntentLibraryRequestState = {
+  intentLibraryMatched: boolean;
+  intentLibraryConfidence: number;
+  intentLibraryIntentCode?: string;
+  clarificationAsked: boolean;
+  missingEntities: string[];
+  fallbackPath?: string;
 };
 
 type BuildingOSActionRegistryEntry = {
@@ -183,6 +206,7 @@ const BUILDINGOS_ACTION_REGISTRY: Record<string, BuildingOSActionRegistryEntry> 
 };
 
 export class BuildingOSAdapter implements SaasAssistantAdapter {
+  private static readonly INTENT_LIBRARY_STATE_KEY = "__intentLibraryState";
   public readonly appId = "buildingos";
   private readonly financialGateway!: BuildingOSFinancialGateway | undefined;
   private readonly readOnlyQueryGateway!: BuildingOSReadOnlyQueryGateway | undefined;
@@ -260,11 +284,46 @@ private getAndValidatePendingClarification(
   }
 
   private buildObservabilityMetadata(
-    intentCode: string,
-    answerSource: string,
-    options?: {
+    contextOrIntent: ResolvedAssistantContext | string,
+    intentOrSource: string,
+    answerSourceOrOptions?:
+      | string
+      | {
+          context?: ResolvedAssistantContext;
+          traceId?: string;
+          gatewayOutcome?: GatewayOutcome;
+          resolvedLevel?: AssistantResolvedLevel;
+          resolvedIntentCode?: string;
+          toolName?: string;
+          fallbackPath?: string;
+          latencyMsRouting?: number;
+          latencyMsGateway?: number;
+          latencyMsTotal?: number;
+          clarificationOptionChosen?: number;
+          followUpExecuted?: boolean;
+          responseType?: string;
+          p1Routed?: boolean;
+          p2Routed?: boolean;
+          p2bRouted?: boolean;
+          p3Routed?: boolean;
+          p0Routed?: boolean;
+          authorizationDenied?: boolean;
+          intentLibraryMatched?: boolean;
+          intentLibraryConfidence?: number;
+          intentLibraryIntentCode?: string;
+          clarificationAsked?: boolean;
+          missingEntities?: string[];
+        },
+    maybeOptions?: {
+      context?: ResolvedAssistantContext;
       traceId?: string;
       gatewayOutcome?: GatewayOutcome;
+      resolvedLevel?: AssistantResolvedLevel;
+      resolvedIntentCode?: string;
+      toolName?: string;
+      fallbackPath?: string;
+      latencyMsRouting?: number;
+      latencyMsGateway?: number;
       latencyMsTotal?: number;
       clarificationOptionChosen?: number;
       followUpExecuted?: boolean;
@@ -275,16 +334,108 @@ private getAndValidatePendingClarification(
       p3Routed?: boolean;
       p0Routed?: boolean;
       authorizationDenied?: boolean;
+      intentLibraryMatched?: boolean;
+      intentLibraryConfidence?: number;
+      intentLibraryIntentCode?: string;
+      clarificationAsked?: boolean;
+      missingEntities?: string[];
     }
-  ): Record<string, unknown> {
-    const base: Record<string, unknown> = {
+  ): AssistantTurnCompletedMetadata & Record<string, unknown> {
+    const hasContextAsFirstArg =
+      typeof contextOrIntent !== "string" && contextOrIntent !== null;
+    const context =
+      (hasContextAsFirstArg
+        ? contextOrIntent
+        : maybeOptions?.context ?? (answerSourceOrOptions as { context?: ResolvedAssistantContext })?.context) ??
+      ({
+        appId: "buildingos",
+        tenantId: "unknown-tenant",
+        userId: "unknown-user",
+        role: "RESIDENT",
+        route: "/",
+        currentModule: "general",
+        permissions: [],
+      } as ResolvedAssistantContext);
+    const intentCode = hasContextAsFirstArg ? intentOrSource : contextOrIntent;
+    const answerSource =
+      typeof answerSourceOrOptions === "string"
+        ? answerSourceOrOptions
+        : intentOrSource;
+    const options =
+      (typeof answerSourceOrOptions === "string"
+        ? maybeOptions
+        : answerSourceOrOptions) ?? {};
+    const contextIntentLibraryState = this.getIntentLibraryState(context);
+
+    const resolvedLevel =
+      options?.resolvedLevel ??
+      (options?.p0Routed
+        ? "P0"
+        : options?.p1Routed
+          ? "P1"
+          : options?.p2bRouted
+            ? "P2B"
+            : options?.p2Routed
+              ? "P2"
+              : options?.p3Routed
+                ? "P3"
+                : "FALLBACK");
+    const gatewayOutcome = options?.gatewayOutcome ?? "success";
+    const latencyMsTotal = Math.max(0, options?.latencyMsTotal ?? 0);
+    const latencyMsRouting = Math.max(
+      0,
+      options?.latencyMsRouting ?? options?.latencyMsTotal ?? 0
+    );
+
+    const base: AssistantTurnCompletedMetadata & Record<string, unknown> = {
+      traceId: options?.traceId ?? generateTraceId(),
+      timestamp: new Date().toISOString(),
+      tenantId: context.tenantId ?? "unknown-tenant",
+      userId: context.userId,
+      role: context.role,
+      buildingId: this.resolveBuildingIdFromContext(context),
+      unitId: this.resolveUnitIdFromContext(context),
+      resolvedLevel,
+      resolvedIntentCode: options?.resolvedIntentCode ?? intentCode,
+      toolName: options?.toolName,
+      fallbackPath:
+        options?.fallbackPath ??
+        contextIntentLibraryState?.fallbackPath ??
+        "none",
+      gatewayOutcome,
+      latencyMsTotal,
+      latencyMsRouting,
+      latencyMsGateway:
+        typeof options?.latencyMsGateway === "number"
+          ? Math.max(0, options.latencyMsGateway)
+          : undefined,
+      p0EnforcementEnabled:
+        process.env.ASSISTANT_P0_ENFORCEMENT_ENABLED === "true",
+      p3Enabled: this.isP3EnabledForTenant(context.tenantId),
       intentCode,
       answerSource,
       manifestVersion: this.p1Router.getManifestVersion(),
+      intentLibraryMatched:
+        options?.intentLibraryMatched ??
+        contextIntentLibraryState?.intentLibraryMatched ??
+        false,
+      intentLibraryConfidence:
+        options?.intentLibraryConfidence ??
+        contextIntentLibraryState?.intentLibraryConfidence ??
+        0,
+      intentLibraryIntentCode:
+        options?.intentLibraryIntentCode ??
+        contextIntentLibraryState?.intentLibraryIntentCode,
+      clarificationAsked:
+        options?.clarificationAsked ??
+        contextIntentLibraryState?.clarificationAsked ??
+        false,
+      missingEntities:
+        options?.missingEntities ??
+        contextIntentLibraryState?.missingEntities ??
+        [],
     };
     if (options?.traceId) base.traceId = options.traceId;
-    if (options?.gatewayOutcome) base.gatewayOutcome = options.gatewayOutcome;
-    if (options?.latencyMsTotal) base.latencyMsTotal = options.latencyMsTotal;
     if (options?.clarificationOptionChosen) base.clarificationOptionChosen = options.clarificationOptionChosen;
     if (options?.followUpExecuted) base.followUpExecuted = options.followUpExecuted;
     if (options?.responseType) base.responseType = options.responseType;
@@ -295,6 +446,637 @@ private getAndValidatePendingClarification(
     if (options?.p0Routed) base.p0Routed = options.p0Routed;
     if (options?.authorizationDenied) base.authorizationDenied = options.authorizationDenied;
     return base;
+  }
+
+  private resolveBuildingIdFromContext(
+    context: ResolvedAssistantContext
+  ): string | undefined {
+    if (typeof context.extra?.buildingId === "string") {
+      return context.extra.buildingId;
+    }
+    if (context.entityType === "building" && typeof context.entityId === "string") {
+      return context.entityId;
+    }
+    return undefined;
+  }
+
+  private resolveUnitIdFromContext(
+    context: ResolvedAssistantContext
+  ): string | undefined {
+    if (typeof context.extra?.unitId === "string") {
+      return context.extra.unitId;
+    }
+    if (context.entityType === "unit" && typeof context.entityId === "string") {
+      return context.entityId;
+    }
+    return undefined;
+  }
+
+  private getIntentLibraryState(
+    context: ResolvedAssistantContext
+  ): IntentLibraryRequestState | null {
+    const extra = context.extra;
+    if (!extra || typeof extra !== "object") {
+      return null;
+    }
+
+    const state = extra[BuildingOSAdapter.INTENT_LIBRARY_STATE_KEY];
+    if (!state || typeof state !== "object" || Array.isArray(state)) {
+      return null;
+    }
+
+    const record = state as Partial<IntentLibraryRequestState>;
+    return {
+      intentLibraryMatched: record.intentLibraryMatched === true,
+      intentLibraryConfidence:
+        typeof record.intentLibraryConfidence === "number"
+          ? record.intentLibraryConfidence
+          : 0,
+      intentLibraryIntentCode:
+        typeof record.intentLibraryIntentCode === "string"
+          ? record.intentLibraryIntentCode
+          : undefined,
+      clarificationAsked: record.clarificationAsked === true,
+      missingEntities: Array.isArray(record.missingEntities)
+        ? record.missingEntities.map((value) => String(value))
+        : [],
+      fallbackPath:
+        typeof record.fallbackPath === "string"
+          ? record.fallbackPath
+          : undefined,
+    };
+  }
+
+  private setIntentLibraryState(
+    context: ResolvedAssistantContext,
+    state: IntentLibraryRequestState
+  ): void {
+    context.extra = {
+      ...(context.extra ?? {}),
+      [BuildingOSAdapter.INTENT_LIBRARY_STATE_KEY]: state,
+    };
+  }
+
+  private detectMissingIntentEntities(
+    requiredEntities: string[],
+    question: string,
+    context: ResolvedAssistantContext
+  ): string[] {
+    const missingEntities: string[] = [];
+    const normalized = this.normalizeText(question);
+
+    const extractedUnitId = this.extractUnitIdFromQuestion(question);
+    const contextUnitId = this.resolveUnitIdFromContext(context);
+    const hasUnitId =
+      Boolean(contextUnitId) ||
+      Boolean(extractedUnitId) ||
+      /(?:unidad|uf|depto|departamento|apto|apartamento)\s+[a-z0-9-]+/i.test(normalized);
+
+    const contextBuildingId = this.resolveBuildingIdFromContext(context);
+    const buildingTokenMatch = normalized.match(
+      /(?:torre|edificio|bloque)\s+([a-z0-9-]+)/i
+    );
+    const nonScopedBuildingTokens = new Set([
+      "hoy",
+      "ahora",
+      "actual",
+      "completo",
+      "principal",
+      "general",
+    ]);
+    const hasBuildingId =
+      Boolean(contextBuildingId) ||
+      Boolean(
+        buildingTokenMatch?.[1] &&
+          !nonScopedBuildingTokens.has(buildingTokenMatch[1].toLowerCase())
+      );
+    const contextTowerId =
+      typeof context.extra?.towerId === "string" ? context.extra.towerId : undefined;
+    const towerTokenMatch = normalized.match(/(?:torre|tower)\s+([a-z0-9-]+)/i);
+    const nonScopedTowerTokens = new Set([
+      "hoy",
+      "ahora",
+      "actual",
+      "principal",
+      "general",
+    ]);
+    const hasTowerId =
+      Boolean(contextTowerId) ||
+      Boolean(
+        towerTokenMatch?.[1] &&
+          !nonScopedTowerTokens.has(towerTokenMatch[1].toLowerCase())
+      );
+
+    const hasPeriod =
+      (typeof context.extra?.period === "string" &&
+        context.extra.period.trim().length > 0) ||
+      /\b(20\d{2})[-/](0[1-9]|1[0-2])\b/.test(normalized) ||
+      /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/.test(normalized) ||
+      /\b(este mes|hoy|actual)\b/.test(normalized);
+
+    for (const entity of requiredEntities) {
+      if (entity === "tenantId" && !context.tenantId) {
+        missingEntities.push(entity);
+      } else if (entity === "userId" && !context.userId) {
+        missingEntities.push(entity);
+      } else if (entity === "unitId" && !hasUnitId) {
+        missingEntities.push(entity);
+      } else if (entity === "buildingId" && !hasBuildingId) {
+        missingEntities.push(entity);
+      } else if (entity === "towerId" && !hasTowerId) {
+        missingEntities.push(entity);
+      } else if (entity === "period" && !hasPeriod) {
+        missingEntities.push(entity);
+      }
+    }
+
+    return missingEntities;
+  }
+
+  private extractPeriodFromQuestion(question: string): string | undefined {
+    const normalized = this.normalizeText(question);
+    const isoMatch = normalized.match(/\b(20\d{2})[-/](0[1-9]|1[0-2])\b/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2]}`;
+    }
+
+    const monthMap: Record<string, string> = {
+      enero: "01",
+      febrero: "02",
+      marzo: "03",
+      abril: "04",
+      mayo: "05",
+      junio: "06",
+      julio: "07",
+      agosto: "08",
+      septiembre: "09",
+      octubre: "10",
+      noviembre: "11",
+      diciembre: "12",
+    };
+
+    const monthMatch = normalized.match(
+      /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b(?:\s+de\s+|\s+)?(20\d{2})?/
+    );
+    if (monthMatch) {
+      const month = monthMap[monthMatch[1] ?? ""] ?? "01";
+      const year = monthMatch[2] ?? String(new Date().getFullYear());
+      return `${year}-${month}`;
+    }
+
+    if (/\b(este mes|mes actual)\b/.test(normalized)) {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      return `${now.getFullYear()}-${month}`;
+    }
+
+    return undefined;
+  }
+
+  private extractIntentEntities(
+    question: string,
+    context: ResolvedAssistantContext
+  ): Record<string, string | undefined> {
+    return {
+      tenantId: context.tenantId,
+      userId: context.userId,
+      unitId: this.resolveUnitIdFromContext(context) ?? this.extractUnitIdFromQuestion(question),
+      buildingId: this.resolveBuildingIdFromContext(context),
+      towerId:
+        (typeof context.extra?.towerId === "string"
+          ? context.extra.towerId
+          : undefined) ??
+        (() => {
+          const normalized = this.normalizeText(question);
+          const towerMatch = normalized.match(/(?:torre|tower)\s+([a-z0-9-]+)/i);
+          return towerMatch?.[1]?.toUpperCase();
+        })(),
+      period:
+        (typeof context.extra?.period === "string"
+          ? context.extra.period
+          : undefined) ?? this.extractPeriodFromQuestion(question),
+    };
+  }
+
+  private buildIntentLibraryClarificationAnswer(
+    missingEntities: string[],
+    intentClarification: {
+      missingUnitId?: string;
+      missingBuildingId?: string;
+      missingTowerId?: string;
+      missingPeriod?: string;
+    }
+  ): string {
+    const prompts: string[] = [];
+    for (const entity of missingEntities) {
+      if (entity === "unitId" && intentClarification.missingUnitId) {
+        prompts.push(intentClarification.missingUnitId);
+      } else if (
+        entity === "buildingId" &&
+        intentClarification.missingBuildingId
+      ) {
+        prompts.push(intentClarification.missingBuildingId);
+      } else if (
+        entity === "towerId" &&
+        intentClarification.missingTowerId
+      ) {
+        prompts.push(intentClarification.missingTowerId);
+      } else if (entity === "period" && intentClarification.missingPeriod) {
+        prompts.push(intentClarification.missingPeriod);
+      }
+    }
+
+    if (prompts.length > 0) {
+      return prompts.join(" ");
+    }
+
+    return "Necesito un dato adicional para responder en modo operativo. ¿Me lo podés indicar?";
+  }
+
+  private buildIntentLibraryOptionLabel(intentCode: string): string {
+    const intent = getIntentLibraryIntent(intentCode);
+    if (!intent) {
+      return "opción sugerida";
+    }
+
+    const prompt = intent.utterances[0] ?? intent.canonicalAnswer.resident;
+    return prompt.replace(/\s+/g, " ").trim();
+  }
+
+  private hasIntentLibraryToolPermissions(
+    intent: IntentLibraryIntent,
+    context: ResolvedAssistantContext
+  ): boolean {
+    const requiredPermissions = intent.toolBinding?.requiredPermissions ?? [];
+    const normalizedRole = String(context.role ?? "").toUpperCase();
+    const isAdminRole =
+      normalizedRole === "ADMIN" ||
+      normalizedRole === "TENANT_ADMIN" ||
+      normalizedRole === "TENANT_OWNER" ||
+      normalizedRole === "SUPER_ADMIN" ||
+      normalizedRole === "OPERATOR";
+
+    // Policy: ADMIN pagos agregados require payments.read baseline.
+    if (isAdminRole && !context.permissions.includes("payments.read")) {
+      return false;
+    }
+
+    return requiredPermissions.every((permission) =>
+      context.permissions.includes(permission)
+    );
+  }
+
+  private isIntentLibraryEligibleRole(role: string): boolean {
+    const normalizedRole = String(role ?? "").toUpperCase();
+    return (
+      normalizedRole === "RESIDENT" ||
+      normalizedRole === "ADMIN" ||
+      normalizedRole === "TENANT_ADMIN" ||
+      normalizedRole === "TENANT_OWNER" ||
+      normalizedRole === "SUPER_ADMIN" ||
+      normalizedRole === "OPERATOR"
+    );
+  }
+
+  private async tryResolveIntentLibrary(
+    question: string,
+    context: ResolvedAssistantContext,
+    turnStartedAt: number
+  ): Promise<DataBackedAnswerResult | null> {
+    const p0EnforcementEnabled =
+      process.env.ASSISTANT_P0_ENFORCEMENT_ENABLED === "true";
+    const eligibleRole = this.isIntentLibraryEligibleRole(context.role);
+    if (!eligibleRole) {
+      return null;
+    }
+
+    const match = matchIntent({ question, role: context.role });
+    if (!match) {
+      this.setIntentLibraryState(context, {
+        intentLibraryMatched: false,
+        intentLibraryConfidence: 0,
+        clarificationAsked: false,
+        missingEntities: [],
+        fallbackPath: "intent_library_no_match",
+      });
+      return null;
+    }
+
+    const intentEntry = getIntentLibraryIntent(match.intentCode);
+    if (!intentEntry || (intentEntry.level !== "P0" && intentEntry.level !== "P1")) {
+      this.setIntentLibraryState(context, {
+        intentLibraryMatched: false,
+        intentLibraryConfidence: match.confidence,
+        intentLibraryIntentCode: match.intentCode,
+        clarificationAsked: false,
+        missingEntities: [],
+        fallbackPath: "intent_library_no_match",
+      });
+      return null;
+    }
+
+    const missingEntities = this.detectMissingIntentEntities(
+      intentEntry.requiredEntities,
+      question,
+      context
+    );
+
+    const sharedState: IntentLibraryRequestState = {
+      intentLibraryMatched: true,
+      intentLibraryConfidence: match.confidence,
+      intentLibraryIntentCode: intentEntry.intentCode,
+      clarificationAsked: false,
+      missingEntities: [],
+      fallbackPath: "intent_library_no_match",
+    };
+
+    if (missingEntities.length > 0) {
+      const clarificationAnswer = this.buildIntentLibraryClarificationAnswer(
+        missingEntities,
+        intentEntry.clarificationQuestions
+      );
+      const state: IntentLibraryRequestState = {
+        ...sharedState,
+        clarificationAsked: true,
+        missingEntities,
+        fallbackPath: "intent_library_clarification",
+      };
+      this.setIntentLibraryState(context, state);
+      return {
+        answer: clarificationAnswer,
+        actions: [],
+        metadata: this.buildObservabilityMetadata(context, intentEntry.intentCode, "live_data", {
+          gatewayOutcome: "invalid_payload",
+          resolvedLevel: intentEntry.level,
+          resolvedIntentCode: intentEntry.intentCode,
+          fallbackPath: "intent_library_clarification",
+          responseType: "clarification",
+          p0Routed: intentEntry.level === "P0",
+          p1Routed: intentEntry.level === "P1",
+          intentLibraryMatched: true,
+          intentLibraryConfidence: match.confidence,
+          intentLibraryIntentCode: intentEntry.intentCode,
+          clarificationAsked: true,
+          missingEntities,
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
+        }),
+      };
+    }
+
+    if (match.confidence >= 0.85) {
+      const entities = this.extractIntentEntities(question, context);
+      const hasToolBinding = Boolean(intentEntry.toolBinding?.toolName);
+
+      if (hasToolBinding) {
+        if (!this.hasIntentLibraryToolPermissions(intentEntry, context)) {
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: true,
+            missingEntities: [],
+            fallbackPath: "intent_library_tool_error",
+          };
+          this.setIntentLibraryState(context, state);
+          return {
+            answer:
+              "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
+            actions: [],
+            metadata: this.buildObservabilityMetadata(
+              context,
+              intentEntry.intentCode,
+              "live_data",
+              {
+                gatewayOutcome: "denied",
+                resolvedLevel: intentEntry.level,
+                resolvedIntentCode: intentEntry.intentCode,
+                fallbackPath: "intent_library_tool_error",
+                responseType: "clarification",
+                p0Routed: intentEntry.level === "P0",
+                p1Routed: intentEntry.level === "P1",
+                intentLibraryMatched: true,
+                intentLibraryConfidence: match.confidence,
+                intentLibraryIntentCode: intentEntry.intentCode,
+                clarificationAsked: true,
+                missingEntities: [],
+                authorizationDenied: true,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Date.now() - turnStartedAt,
+              }
+            ),
+          };
+        }
+
+        const execution = await executeIntentLibraryTool({
+          intent: intentEntry,
+          context,
+          question,
+          entities,
+          readOnlyQueryGateway: this.readOnlyQueryGateway,
+          financialGateway: this.financialGateway,
+        });
+
+        if (execution.status === "success") {
+          const outputMapping = intentEntry.toolBinding?.outputMapping ?? {};
+          const rendered = renderCanonicalTemplate(
+            context.role === "RESIDENT"
+              ? intentEntry.canonicalAnswer.resident
+              : intentEntry.canonicalAnswer.admin ??
+                intentEntry.canonicalAnswer.resident,
+            outputMapping,
+            execution.data
+          );
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: false,
+            missingEntities: [],
+            fallbackPath: "intent_library_tool_success",
+          };
+          this.setIntentLibraryState(context, state);
+          return {
+            answer: rendered.answer,
+            actions:
+              execution.gatewayResult?.actions?.length
+                ? execution.gatewayResult.actions
+                : [],
+            metadata: this.buildObservabilityMetadata(
+              context,
+              intentEntry.intentCode,
+              "live_data",
+              {
+                gatewayOutcome: "success",
+                resolvedLevel: intentEntry.level,
+                resolvedIntentCode: intentEntry.intentCode,
+                fallbackPath: "intent_library_tool_success",
+                responseType: "exact",
+                p0Routed: intentEntry.level === "P0",
+                p1Routed: intentEntry.level === "P1",
+                intentLibraryMatched: true,
+                intentLibraryConfidence: match.confidence,
+                intentLibraryIntentCode: intentEntry.intentCode,
+                clarificationAsked: false,
+                missingEntities: [],
+                latencyMsGateway: execution.latencyMsGateway,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Math.max(
+                  0,
+                  Date.now() - turnStartedAt - execution.latencyMsGateway
+                ),
+              }
+            ),
+          };
+        }
+
+        if (execution.status === "null") {
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: false,
+            missingEntities: [],
+            fallbackPath: "intent_library_tool_null",
+          };
+          this.setIntentLibraryState(context, state);
+          return {
+            answer:
+              "No encontré datos operativos para esa consulta en este momento. Reintentá en unos minutos.",
+            actions: [],
+            metadata: this.buildObservabilityMetadata(
+              context,
+              intentEntry.intentCode,
+              "live_data",
+              {
+                gatewayOutcome: "null",
+                resolvedLevel: intentEntry.level,
+                resolvedIntentCode: intentEntry.intentCode,
+                fallbackPath: "intent_library_tool_null",
+                responseType: "clarification",
+                p0Routed: intentEntry.level === "P0",
+                p1Routed: intentEntry.level === "P1",
+                intentLibraryMatched: true,
+                intentLibraryConfidence: match.confidence,
+                intentLibraryIntentCode: intentEntry.intentCode,
+                clarificationAsked: true,
+                missingEntities: [],
+                latencyMsGateway: execution.latencyMsGateway,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Math.max(
+                  0,
+                  Date.now() - turnStartedAt - execution.latencyMsGateway
+                ),
+              }
+            ),
+          };
+        }
+
+        const state: IntentLibraryRequestState = {
+          ...sharedState,
+          clarificationAsked: false,
+          missingEntities: [],
+          fallbackPath: "intent_library_tool_error",
+        };
+        this.setIntentLibraryState(context, state);
+        const operationalErrorAnswer = p0EnforcementEnabled
+          ? "No pude confirmar datos operativos en este momento. Reintentá en unos minutos."
+          : "No pude ejecutar la consulta operativa en este momento. Reintentá en unos minutos.";
+        return {
+          answer: operationalErrorAnswer,
+          actions: [],
+          metadata: this.buildObservabilityMetadata(
+            context,
+            intentEntry.intentCode,
+            "live_data",
+            {
+              gatewayOutcome: "error",
+              resolvedLevel: intentEntry.level,
+              resolvedIntentCode: intentEntry.intentCode,
+              fallbackPath: "intent_library_tool_error",
+              responseType: "clarification",
+              p0Routed: intentEntry.level === "P0",
+              p1Routed: intentEntry.level === "P1",
+              intentLibraryMatched: true,
+              intentLibraryConfidence: match.confidence,
+              intentLibraryIntentCode: intentEntry.intentCode,
+              clarificationAsked: true,
+              missingEntities: [],
+              latencyMsGateway: execution.latencyMsGateway,
+              latencyMsTotal: Date.now() - turnStartedAt,
+              latencyMsRouting: Math.max(
+                0,
+                Date.now() - turnStartedAt - execution.latencyMsGateway
+              ),
+            }
+          ),
+        };
+      }
+
+      const state: IntentLibraryRequestState = {
+        ...sharedState,
+        clarificationAsked: false,
+        missingEntities: [],
+        fallbackPath: "intent_library_answer",
+      };
+      this.setIntentLibraryState(context, state);
+      return {
+        answer:
+          context.role === "RESIDENT"
+            ? intentEntry.canonicalAnswer.resident
+            : intentEntry.canonicalAnswer.admin ??
+              intentEntry.canonicalAnswer.resident,
+        actions: [],
+        metadata: this.buildObservabilityMetadata(context, intentEntry.intentCode, "knowledge", {
+          gatewayOutcome: "success",
+          resolvedLevel: intentEntry.level,
+          resolvedIntentCode: intentEntry.intentCode,
+          fallbackPath: "intent_library_answer",
+          responseType: "summary",
+          p0Routed: intentEntry.level === "P0",
+          p1Routed: intentEntry.level === "P1",
+          intentLibraryMatched: true,
+          intentLibraryConfidence: match.confidence,
+          intentLibraryIntentCode: intentEntry.intentCode,
+          clarificationAsked: false,
+          missingEntities: [],
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
+        }),
+      };
+    }
+
+    if (match.confidence >= 0.7 && match.confidence < 0.85) {
+      const topOptions = match.topCandidates.slice(0, 2);
+      const optionLines = topOptions.map((candidate, index) => {
+        const label = this.buildIntentLibraryOptionLabel(candidate.intentCode);
+        return `${index + 1}) ${label}`;
+      });
+      const state: IntentLibraryRequestState = {
+        ...sharedState,
+        clarificationAsked: true,
+        missingEntities: [],
+        fallbackPath: "intent_library_clarification",
+      };
+      this.setIntentLibraryState(context, state);
+      return {
+        answer: `Para ayudarte mejor, ¿te referís a:\n${optionLines.join("\n")}?`,
+        actions: [],
+        metadata: this.buildObservabilityMetadata(context, intentEntry.intentCode, "live_data", {
+          gatewayOutcome: "invalid_payload",
+          resolvedLevel: intentEntry.level,
+          resolvedIntentCode: intentEntry.intentCode,
+          fallbackPath: "intent_library_clarification",
+          responseType: "clarification",
+          p0Routed: intentEntry.level === "P0",
+          p1Routed: intentEntry.level === "P1",
+          intentLibraryMatched: true,
+          intentLibraryConfidence: match.confidence,
+          intentLibraryIntentCode: intentEntry.intentCode,
+          clarificationAsked: true,
+          missingEntities: [],
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
+        }),
+      };
+    }
+
+    this.setIntentLibraryState(context, sharedState);
+    return null;
   }
 
   async getModules(): Promise<AppModuleDefinition[]> {
@@ -417,6 +1199,9 @@ private getAndValidatePendingClarification(
     input: DataBackedAnswerInput
   ): Promise<DataBackedAnswerResult | null> {
     const { question, context } = input;
+    const turnStartedAt = Date.now();
+    const p0EnforcementEnabled =
+      process.env.ASSISTANT_P0_ENFORCEMENT_ENABLED === "true";
 
     if (!context.tenantId) {
       return null;
@@ -427,11 +1212,24 @@ private getAndValidatePendingClarification(
         answer:
           "Estoy en modo solo consulta. No puedo ejecutar cambios (crear cargos, registrar pagos o modificar residentes).",
         actions: [],
-        metadata: this.buildObservabilityMetadata("UNKNOWN", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "UNKNOWN", "live_data", {
           gatewayOutcome: "denied",
+          resolvedLevel: "FALLBACK",
+          fallbackPath: "mutation_blocked",
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
           responseType: "clarification",
         }),
       };
+    }
+
+    const intentLibraryResult = await this.tryResolveIntentLibrary(
+      question,
+      context,
+      turnStartedAt
+    );
+    if (intentLibraryResult) {
+      return intentLibraryResult;
     }
 
     const forcedUnitDebt = await this.tryResolveForcedUnitDebtQuestion(question, context);
@@ -449,27 +1247,62 @@ private getAndValidatePendingClarification(
         answer:
           "Necesito una aclaracion para responder en modo operativo. Decime si queres saldo, pagos, residente o busqueda de la unidad.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("UNKNOWN", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "UNKNOWN", "live_data", {
           gatewayOutcome: "invalid_payload",
+          resolvedLevel: "FALLBACK",
+          fallbackPath: "ambiguous_unit_building_query",
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
           responseType: "clarification",
         }),
       };
     }
 
-    const p0Route = this.p0Router.route(question);
+    const shouldBypassP0ForResidentDebt =
+      context.role === "RESIDENT" && this.financialGateway && this.isResidentDebtQuestion(question, context);
+    const p0Route = shouldBypassP0ForResidentDebt ? null : this.p0Router.route(question);
     if (p0Route) {
+      const financialP0Intent = this.isFinancialIntent(
+        p0Route.intentCode as BuildingOSCanonicalIntentCode
+      );
+
+      if (financialP0Intent && !this.readOnlyQueryGateway) {
+        const bypassResult = await this.tryResolveP0FinancialBypass({
+          question,
+          context,
+          intentCode: p0Route.intentCode as BuildingOSCanonicalIntentCode,
+          turnStartedAt,
+        });
+        if (bypassResult) {
+          return bypassResult;
+        }
+        if (p0EnforcementEnabled) {
+          return this.buildP0OperationalUnavailableResponse(
+            question,
+            context,
+            p0Route.intentCode as BuildingOSCanonicalIntentCode,
+            p0Route.toolName,
+            turnStartedAt
+          );
+        }
+      }
+
       if (!this.canRunReadOnlyIntent(p0Route.intentCode, context)) {
         return {
           answer:
             "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
           actions: [],
-          metadata: {
+          metadata: this.buildObservabilityMetadata(context, p0Route.intentCode, "live_data", {
+            gatewayOutcome: "denied",
             responseType: "clarification",
-            intent: p0Route.intentCode,
-            intentCode: p0Route.intentCode,
-            answerSource: "live_data",
+            resolvedLevel: "P0",
+            resolvedIntentCode: p0Route.intentCode,
+            toolName: p0Route.toolName,
             authorizationDenied: true,
-          },
+            p0Routed: true,
+            latencyMsTotal: Date.now() - turnStartedAt,
+            latencyMsRouting: Date.now() - turnStartedAt,
+          }),
         };
       }
 
@@ -478,16 +1311,22 @@ private getAndValidatePendingClarification(
         return {
           answer: clarification.answer,
           actions: [],
-          metadata: {
+          metadata: this.buildObservabilityMetadata(context, p0Route.intentCode, "live_data", {
+            gatewayOutcome: "unavailable",
             responseType: "clarification",
-            answerSource: "live_data",
-            clarificationOptions: clarification.options,
+            resolvedLevel: "P0",
+            resolvedIntentCode: p0Route.intentCode,
+            toolName: p0Route.toolName,
             p0Routed: true,
-            gatewayUnavailable: true,
-          },
+            fallbackPath: "p0_gateway_missing",
+            latencyMsTotal: Date.now() - turnStartedAt,
+            latencyMsRouting: Date.now() - turnStartedAt,
+            clarificationOptionChosen: undefined,
+          }),
         };
       }
 
+      const gatewayStartedAt = Date.now();
       try {
         const result = await this.readOnlyQueryGateway.query({
           intentCode: p0Route.intentCode,
@@ -505,16 +1344,67 @@ private getAndValidatePendingClarification(
                 ? result.actions
                 : this.getDefaultReadOnlyActions(p0Route.intentCode),
             metadata: {
-              ...result.metadata,
+              ...(result.metadata ?? {}),
+              ...this.buildObservabilityMetadata(context, p0Route.intentCode, "live_data", {
+                gatewayOutcome: "success",
+                resolvedLevel: "P0",
+                resolvedIntentCode: p0Route.intentCode,
+                toolName: p0Route.toolName,
+                p0Routed: true,
+                latencyMsGateway: Date.now() - gatewayStartedAt,
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Math.max(0, gatewayStartedAt - turnStartedAt),
+              }),
               intent: p0Route.intentCode,
-              intentCode: p0Route.intentCode,
               intentScore: p0Route.score,
-              p0Routed: true,
-              answerSource: "live_data",
             },
           };
         }
+        if (financialP0Intent) {
+          const bypassResult = await this.tryResolveP0FinancialBypass({
+            question,
+            context,
+            intentCode: p0Route.intentCode as BuildingOSCanonicalIntentCode,
+            turnStartedAt,
+            latencyMsGateway: Date.now() - gatewayStartedAt,
+          });
+          if (bypassResult) {
+            return bypassResult;
+          }
+          if (p0EnforcementEnabled) {
+            return this.buildP0OperationalUnavailableResponse(
+              question,
+              context,
+              p0Route.intentCode as BuildingOSCanonicalIntentCode,
+              p0Route.toolName,
+              turnStartedAt,
+              Date.now() - gatewayStartedAt
+            );
+          }
+        }
       } catch {
+        if (financialP0Intent) {
+          const bypassResult = await this.tryResolveP0FinancialBypass({
+            question,
+            context,
+            intentCode: p0Route.intentCode as BuildingOSCanonicalIntentCode,
+            turnStartedAt,
+            latencyMsGateway: Date.now() - gatewayStartedAt,
+          });
+          if (bypassResult) {
+            return bypassResult;
+          }
+          if (p0EnforcementEnabled) {
+            return this.buildP0OperationalUnavailableResponse(
+              question,
+              context,
+              p0Route.intentCode as BuildingOSCanonicalIntentCode,
+              p0Route.toolName,
+              turnStartedAt,
+              Date.now() - gatewayStartedAt
+            );
+          }
+        }
         // Continue with controlled clarification fallback below.
       }
 
@@ -523,16 +1413,33 @@ private getAndValidatePendingClarification(
         answer: clarification.answer,
         actions: [],
         metadata: {
-          responseType: "clarification",
-          answerSource: "live_data",
+          ...this.buildObservabilityMetadata(context, p0Route.intentCode, "live_data", {
+            gatewayOutcome: "unavailable",
+            responseType: "clarification",
+            resolvedLevel: "P0",
+            resolvedIntentCode: p0Route.intentCode,
+            toolName: p0Route.toolName,
+            p0Routed: true,
+            fallbackPath: "p0_gateway_unavailable",
+            latencyMsGateway: Date.now() - gatewayStartedAt,
+            latencyMsTotal: Date.now() - turnStartedAt,
+            latencyMsRouting: Math.max(0, gatewayStartedAt - turnStartedAt),
+          }),
           clarificationOptions: clarification.options,
-          p0Routed: true,
           gatewayUnavailable: true,
         },
       };
     }
 
     if (!this.readOnlyQueryGateway) {
+      const residentDebt = await this.tryResolveResidentDebtSummary(
+        question,
+        context,
+        turnStartedAt
+      );
+      if (residentDebt) {
+        return residentDebt;
+      }
       return null;
     }
 
@@ -542,9 +1449,16 @@ private getAndValidatePendingClarification(
         answer: "La opción ingresada no es válida. Elegí 1 o 2.",
         actions: [],
         metadata: this.buildObservabilityMetadata(
+          context,
           "UNKNOWN",
           "live_data",
-          { gatewayOutcome: "denied" }
+          {
+            gatewayOutcome: "denied",
+            resolvedLevel: "FALLBACK",
+            fallbackPath: "pending_clarification_invalid_option",
+            latencyMsTotal: Date.now() - turnStartedAt,
+            latencyMsRouting: Date.now() - turnStartedAt,
+          }
         ),
       };
     }
@@ -553,16 +1467,22 @@ private getAndValidatePendingClarification(
         answer: "La clarificación ya fue ejecutada o expiró. Si necesitás otra consulta, hacela de nuevo.",
         actions: [],
         metadata: this.buildObservabilityMetadata(
+          context,
           "UNKNOWN",
           "live_data",
-          { gatewayOutcome: "unavailable" }
+          {
+            gatewayOutcome: "unavailable",
+            resolvedLevel: "FALLBACK",
+            fallbackPath: "pending_clarification_expired",
+            latencyMsTotal: Date.now() - turnStartedAt,
+            latencyMsRouting: Date.now() - turnStartedAt,
+          }
         ),
       };
     }
     if (pendingFollowUp && typeof pendingFollowUp === "object" && "intentCode" in pendingFollowUp) {
       const traceId = generateTraceId();
       const startedAt = Date.now();
-      console.log("[ROUTER] P1 follow-up:", pendingFollowUp.intentCode, pendingFollowUp.toolName);
       if (this.canRunReadOnlyIntent(pendingFollowUp.intentCode as BuildingOSCanonicalIntentCode, context)) {
         try {
           const result = await this.readOnlyQueryGateway.query({
@@ -578,14 +1498,21 @@ private getAndValidatePendingClarification(
               answer: result.answer,
               actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(pendingFollowUp.intentCode as BuildingOSCanonicalIntentCode),
               metadata: this.buildObservabilityMetadata(
+                context,
                 pendingFollowUp.intentCode,
                 "live_data",
                 {
                   traceId,
                   gatewayOutcome: "success",
+                  resolvedLevel: "P1",
+                  resolvedIntentCode: pendingFollowUp.intentCode,
+                  toolName: pendingFollowUp.toolName,
+                  latencyMsGateway: Date.now() - startedAt,
+                  latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
                   latencyMsTotal: Date.now() - startedAt,
                   clarificationOptionChosen: pendingFollowUp.clarificationOptionChosen,
                   followUpExecuted: true,
+                  p1Routed: true,
                 }
               ),
             };
@@ -598,7 +1525,6 @@ private getAndValidatePendingClarification(
 
     const p1Route = this.p1Router.route(question);
     if (p1Route) {
-      console.log("[ROUTER] P1 matched:", p1Route.intentCode, p1Route.toolName);
       const intentCode = p1Route.intentCode;
       if (this.canRunReadOnlyIntent(intentCode as BuildingOSCanonicalIntentCode, context)) {
         try {
@@ -616,15 +1542,27 @@ private getAndValidatePendingClarification(
               answer: result.answer,
               actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(intentCode as BuildingOSCanonicalIntentCode),
               metadata: this.buildObservabilityMetadata(
+                context,
                 intentCode,
                 "live_data",
-                { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt }
+                {
+                  traceId,
+                  gatewayOutcome: "success",
+                  resolvedLevel: "P1",
+                  resolvedIntentCode: intentCode,
+                  toolName: p1Route.toolName,
+                  latencyMsGateway: Date.now() - startedAt,
+                  latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
+                  latencyMsTotal: Date.now() - startedAt,
+                  p1Routed: true,
+                }
               ),
             };
           }
           const controlledClarification = this.buildNonGenericClarification(
             question,
-            intentCode
+            intentCode,
+            context
           );
           if (controlledClarification) {
             return controlledClarification;
@@ -640,15 +1578,28 @@ private getAndValidatePendingClarification(
             answer: clarification.answer,
             actions: [],
             metadata: this.buildObservabilityMetadata(
+              context,
               intentCode,
               "live_data",
-              { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }
+              {
+                traceId: generateTraceId(),
+                gatewayOutcome: "unavailable",
+                responseType: "clarification",
+                resolvedLevel: "P1",
+                resolvedIntentCode: intentCode,
+                toolName: p1Route.toolName,
+                p1Routed: true,
+                fallbackPath: "p1_gateway_no_result",
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Date.now() - turnStartedAt,
+              }
             ),
           };
         } catch {
           const controlledClarification = this.buildNonGenericClarification(
             question,
-            intentCode
+            intentCode,
+            context
           );
           if (controlledClarification) {
             return controlledClarification;
@@ -664,9 +1615,21 @@ private getAndValidatePendingClarification(
             answer: clarification.answer,
             actions: [],
             metadata: this.buildObservabilityMetadata(
+              context,
               intentCode,
               "live_data",
-              { traceId: generateTraceId(), gatewayOutcome: "unavailable", responseType: "clarification", p1Routed: true }
+              {
+                traceId: generateTraceId(),
+                gatewayOutcome: "unavailable",
+                responseType: "clarification",
+                resolvedLevel: "P1",
+                resolvedIntentCode: intentCode,
+                toolName: p1Route.toolName,
+                p1Routed: true,
+                fallbackPath: "p1_gateway_error",
+                latencyMsTotal: Date.now() - turnStartedAt,
+                latencyMsRouting: Date.now() - turnStartedAt,
+              }
             ),
           };
         }
@@ -675,9 +1638,20 @@ private getAndValidatePendingClarification(
           answer: "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
           actions: [],
           metadata: this.buildObservabilityMetadata(
+            context,
             intentCode,
             "live_data",
-            { gatewayOutcome: "denied", responseType: "clarification", authorizationDenied: true }
+            {
+              gatewayOutcome: "denied",
+              responseType: "clarification",
+              resolvedLevel: "P1",
+              resolvedIntentCode: intentCode,
+              toolName: p1Route.toolName,
+              authorizationDenied: true,
+              p1Routed: true,
+              latencyMsTotal: Date.now() - turnStartedAt,
+              latencyMsRouting: Date.now() - turnStartedAt,
+            }
           ),
         };
       }
@@ -687,7 +1661,6 @@ private getAndValidatePendingClarification(
       buildingId: context.extra?.buildingId as string | undefined,
     });
     if (p2bRoute && "intentCode" in p2bRoute && p2bRoute.intentCode) {
-      console.log("[ROUTER] P2B matched:", p2bRoute.intentCode, p2bRoute.toolName);
       if (this.canRunReadOnlyIntent("GET_OPEN_TICKETS" as BuildingOSCanonicalIntentCode, context)) {
         try {
           const result = await this.readOnlyQueryGateway.query({
@@ -704,9 +1677,20 @@ private getAndValidatePendingClarification(
               answer: result.answer,
               actions: result.actions?.length ? result.actions : [],
               metadata: this.buildObservabilityMetadata(
+                context,
                 p2bRoute.intentCode,
                 "live_data",
-                { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt }
+                {
+                  traceId,
+                  gatewayOutcome: "success",
+                  resolvedLevel: "P2B",
+                  resolvedIntentCode: p2bRoute.intentCode,
+                  toolName: p2bRoute.toolName,
+                  latencyMsGateway: Date.now() - startedAt,
+                  latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
+                  latencyMsTotal: Date.now() - startedAt,
+                  p2bRouted: true,
+                }
               ),
             };
           }
@@ -721,18 +1705,8 @@ private getAndValidatePendingClarification(
       unitId: context.extra?.unitId as string | undefined,
     });
     if (p2Route && "intentCode" in p2Route && p2Route.intentCode) {
-      console.log("[ROUTER] P2 matched:", p2Route.intentCode, p2Route.toolName, JSON.stringify(p2Route.toolInput));
-      console.log("[ROUTER] P2 ENTERED routing block, checking canRun...");
-      console.log("[ROUTER] P2 calling gateway, baseUrl:", this.readOnlyQueryGateway ? "defined" : "UNDEFINED");
-      console.log("[ROUTER] P2 baseUrl check:", this.readOnlyQueryGateway);
-      console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
-      console.log("[ROUTER] P2 about to call canRunReadOnlyIntent");
       const canRun = this.canRunReadOnlyIntent(p2Route.intentCode as BuildingOSCanonicalIntentCode, context);
-      console.log("[ROUTER] P2 got canRun result:", canRun);
       if (canRun) {
-        console.log("[ROUTER] P2 calling gateway NOW...");
-        console.log("[ROUTER] P2 toolInput:", JSON.stringify(p2Route.toolInput));
-        console.log("[ROUTER] P2 context:", { tenantId: context.tenantId, role: context.role });
         try {
           const result = await this.readOnlyQueryGateway.query({
             intentCode: p2Route.intentCode as BuildingOSCanonicalIntentCode,
@@ -741,7 +1715,6 @@ private getAndValidatePendingClarification(
             toolName: p2Route.toolName as any,
             toolInput: p2Route.toolInput,
           });
-          console.log("[ROUTER] P2 gateway result:", result ? "GOT RESULT" : "NULL RESULT", result?.answer?.substring(0, 50));
           if (result) {
             const traceId = generateTraceId();
             const startedAt = Date.now();
@@ -749,9 +1722,20 @@ private getAndValidatePendingClarification(
               answer: result.answer,
               actions: result.actions?.length ? result.actions : [],
               metadata: this.buildObservabilityMetadata(
+                context,
                 p2Route.intentCode,
                 "live_data",
-                { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt }
+                {
+                  traceId,
+                  gatewayOutcome: "success",
+                  resolvedLevel: "P2",
+                  resolvedIntentCode: p2Route.intentCode,
+                  toolName: p2Route.toolName,
+                  latencyMsGateway: Date.now() - startedAt,
+                  latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
+                  latencyMsTotal: Date.now() - startedAt,
+                  p2Routed: true,
+                }
               ),
             };
           }
@@ -768,8 +1752,6 @@ private getAndValidatePendingClarification(
         buildingCount: (context.extra?.buildingCount as number) || 1,
       });
       if (p3Route && "intentCode" in p3Route && p3Route.intentCode) {
-        console.log("[ROUTER] P3 matched:", p3Route.intentCode, p3Route.toolName, JSON.stringify(p3Route.toolInput));
-        console.log("[ROUTER] P3 ENTERED block");
         if (this.canRunReadOnlyIntent("GET_COLLECTIONS_SUMMARY" as BuildingOSCanonicalIntentCode, context)) {
           try {
             const result = await this.readOnlyQueryGateway.query({
@@ -786,9 +1768,20 @@ private getAndValidatePendingClarification(
                 answer: result.answer,
                 actions: result.actions?.length ? result.actions : [],
                 metadata: this.buildObservabilityMetadata(
+                  context,
                   p3Route.intentCode,
                   "live_data",
-                  { traceId, gatewayOutcome: "success", latencyMsTotal: Date.now() - startedAt, p3Routed: true }
+                  {
+                    traceId,
+                    gatewayOutcome: "success",
+                    resolvedLevel: "P3",
+                    resolvedIntentCode: p3Route.intentCode,
+                    toolName: p3Route.toolName,
+                    latencyMsGateway: Date.now() - startedAt,
+                    latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
+                    latencyMsTotal: Date.now() - startedAt,
+                    p3Routed: true,
+                  }
                 ),
               };
             }
@@ -799,57 +1792,16 @@ private getAndValidatePendingClarification(
       }
     }
 
-    if (this.financialGateway && this.isResidentDebtQuestion(question, context)) {
-      const startedAt = Date.now();
-
-      try {
-        const debtSummary = await this.financialGateway.getResidentDebtSummary({
-          tenantId: context.tenantId,
-          userId: context.userId,
-        });
-
-        if (!debtSummary) {
-          return null;
-        }
-
-        const amount = new Intl.NumberFormat("es-AR", {
-          style: "currency",
-          currency: debtSummary.currency,
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(debtSummary.amount);
-
-        const asOfDate = this.formatDateSafe(debtSummary.asOf);
-
-        return {
-          answer: `Tu deuda actual es ${amount} (corte: ${asOfDate}).`,
-          actions: [
-            {
-              key: "view-my-balance",
-              label: "View My Balance",
-              description: "View your current balance",
-            },
-            {
-              key: "view-pending-charges",
-              label: "View Pending Charges",
-              description: "View your pending charges",
-            },
-          ],
-          metadata: {
-            debtQueryDetected: true,
-            debtAnswerExact: true,
-            financialGatewayLatencyMs: Date.now() - startedAt,
-            asOf: debtSummary.asOf,
-            currency: debtSummary.currency,
-            intent: "resident_debt_summary",
-          },
-        };
-      } catch {
-        return null;
-      }
+    const residentDebt = await this.tryResolveResidentDebtSummary(
+      question,
+      context,
+      turnStartedAt
+    );
+    if (residentDebt) {
+      return residentDebt;
     }
 
-    const paymentFallback = this.buildPaymentOperationalFallback(question);
+    const paymentFallback = this.buildPaymentOperationalFallback(question, context);
     if (paymentFallback) {
       return paymentFallback;
     }
@@ -859,6 +1811,9 @@ private getAndValidatePendingClarification(
       return null;
     }
     const intentDefinition = getBuildingOSIntentDefinition(classification.intentCode);
+    if (!intentDefinition) {
+      return null;
+    }
     if (!this.canRunReadOnlyIntent(intentDefinition.code, context)) {
       return null;
     }
@@ -889,7 +1844,16 @@ private getAndValidatePendingClarification(
             ? result.actions
             : this.getDefaultReadOnlyActions(intentDefinition.code),
         metadata: {
-          ...result.metadata,
+          ...(result.metadata ?? {}),
+          ...this.buildObservabilityMetadata(context, intentDefinition.code, "live_data", {
+            gatewayOutcome: "success",
+            resolvedLevel: "FALLBACK",
+            resolvedIntentCode: intentDefinition.code,
+            fallbackPath: "classifier_operational_fallback",
+            latencyMsGateway: Date.now() - startedAt,
+            latencyMsRouting: Math.max(0, startedAt - turnStartedAt),
+            latencyMsTotal: Date.now() - turnStartedAt,
+          }),
           intent: intentDefinition.code,
           intentCode: intentDefinition.code,
           intentScore: classification.score,
@@ -1336,18 +2300,176 @@ private getAndValidatePendingClarification(
     return debtKeywords.some((keyword) => normalized.includes(keyword));
   }
 
+  private isFinancialIntent(intentCode: BuildingOSCanonicalIntentCode): boolean {
+    const financialIntentCodes: BuildingOSCanonicalIntentCode[] = [
+      "GET_OVERDUE_UNITS",
+      "GET_PENDING_PAYMENTS",
+      "GET_COLLECTIONS_SUMMARY",
+      "GET_UNIT_DEBT",
+      "GET_REJECTED_TODAY",
+      "GET_PAYMENTS_WITHOUT_PROOF",
+      "GET_LAST_PAYMENT",
+      "GET_DEBT_AGING",
+      "GET_DEBT_BY_TOWER",
+      "GET_UNIT_BALANCE_BY_PERIOD",
+      "GET_COLLECTIONS_TREND",
+      "GET_UNIT_DEBT_TREND",
+      "GET_BUILDING_DEBT_TREND",
+    ];
+    return financialIntentCodes.includes(intentCode);
+  }
+
+  private async tryResolveP0FinancialBypass(input: {
+    question: string;
+    context: ResolvedAssistantContext;
+    intentCode: BuildingOSCanonicalIntentCode;
+    turnStartedAt: number;
+    latencyMsGateway?: number;
+  }): Promise<DataBackedAnswerResult | null> {
+    const residentDebt = await this.tryResolveResidentDebtSummary(
+      input.question,
+      input.context,
+      input.turnStartedAt,
+      {
+        resolvedLevel: "P0",
+        fallbackPath: "p0_financial_bypass",
+        latencyMsGateway: input.latencyMsGateway,
+      }
+    );
+    if (residentDebt) {
+      return residentDebt;
+    }
+
+    return this.buildPaymentOperationalFallback(input.question, input.context, {
+      gatewayOutcome: "success",
+      resolvedLevel: "P0",
+      fallbackPath: "p0_financial_bypass",
+      latencyMsGateway: input.latencyMsGateway,
+      latencyMsTotal: Date.now() - input.turnStartedAt,
+      latencyMsRouting: Date.now() - input.turnStartedAt,
+      intentCode: input.intentCode,
+    });
+  }
+
+  private buildP0OperationalUnavailableResponse(
+    question: string,
+    context: ResolvedAssistantContext,
+    intentCode: BuildingOSCanonicalIntentCode,
+    toolName: string | undefined,
+    turnStartedAt: number,
+    latencyMsGateway?: number
+  ): DataBackedAnswerResult {
+    const clarification = this.p0Router.buildClarification(question);
+    return {
+      answer:
+        "No pude confirmar datos operativos de deuda/pagos en este momento. Reintentá en unos minutos.",
+      actions: [],
+      metadata: {
+        ...this.buildObservabilityMetadata(context, intentCode, "live_data", {
+          gatewayOutcome: "unavailable",
+          responseType: "clarification",
+          resolvedLevel: "P0",
+          resolvedIntentCode: intentCode,
+          toolName,
+          p0Routed: true,
+          fallbackPath: "p0_enforcement_operational_unavailable",
+          latencyMsGateway,
+          latencyMsTotal: Date.now() - turnStartedAt,
+          latencyMsRouting: Date.now() - turnStartedAt,
+        }),
+        clarificationOptions: clarification.options,
+      },
+    };
+  }
+
+  private async tryResolveResidentDebtSummary(
+    question: string,
+    context: ResolvedAssistantContext,
+    turnStartedAt: number,
+    options?: {
+      resolvedLevel?: AssistantResolvedLevel;
+      fallbackPath?: string;
+      latencyMsGateway?: number;
+    }
+  ): Promise<DataBackedAnswerResult | null> {
+    if (!this.financialGateway || !this.isResidentDebtQuestion(question, context)) {
+      return null;
+    }
+
+    const startedAt = Date.now();
+    try {
+      const debtSummary = await this.financialGateway.getResidentDebtSummary({
+        tenantId: context.tenantId,
+        userId: context.userId,
+      });
+
+      if (!debtSummary) {
+        return null;
+      }
+
+      const amount = new Intl.NumberFormat("es-AR", {
+        style: "currency",
+        currency: debtSummary.currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(debtSummary.amount);
+
+      const asOfDate = this.formatDateSafe(debtSummary.asOf);
+
+      return {
+        answer: `Tu deuda actual es ${amount} (corte: ${asOfDate}).`,
+        actions: [
+          {
+            key: "view-my-balance",
+            label: "View My Balance",
+            description: "View your current balance",
+          },
+          {
+            key: "view-pending-charges",
+            label: "View Pending Charges",
+            description: "View your pending charges",
+          },
+        ],
+        metadata: {
+          ...this.buildObservabilityMetadata(
+            context,
+            "GET_UNIT_DEBT",
+            "live_data",
+            {
+              gatewayOutcome: "success",
+              resolvedLevel: options?.resolvedLevel ?? "FALLBACK",
+              resolvedIntentCode: "GET_UNIT_DEBT",
+              fallbackPath:
+                options?.fallbackPath ?? "resident_financial_gateway",
+              latencyMsGateway:
+                options?.latencyMsGateway ?? Date.now() - startedAt,
+              latencyMsRouting: Date.now() - turnStartedAt,
+              latencyMsTotal: Date.now() - turnStartedAt,
+            }
+          ),
+          debtQueryDetected: true,
+          debtAnswerExact: true,
+          financialGatewayLatencyMs: Date.now() - startedAt,
+          asOf: debtSummary.asOf,
+          currency: debtSummary.currency,
+          intent: "resident_debt_summary",
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private canRunReadOnlyIntent(
     intentCode: BuildingOSCanonicalIntentCode,
     context: ResolvedAssistantContext
   ): boolean {
     const definition = getBuildingOSIntentDefinition(intentCode);
-    if (definition) {
-      if (!definition.rolesAllowed.includes(context.role)) {
-        console.log("[PERM] intentCode", intentCode, "role", context.role, "NOT in rolesAllowed");
-        return false;
-      }
-    } else {
-      console.log("[PERM] No definition for", intentCode, "- using fallback check");
+    if (!definition) {
+      return false;
+    }
+    if (!definition.rolesAllowed.includes(context.role)) {
+      return false;
     }
 
     const requires = (...permissions: string[]) =>
@@ -1383,7 +2505,6 @@ private getAndValidatePendingClarification(
       case "GET_URGENT_UNASSIGNED_TICKETS":
         return requires("tickets.read");
       case "GET_COLLECTIONS_TREND":
-        console.log("[PERM] Checking GET_COLLECTIONS_TREND, permissions:", context.permissions);
         return requires("charges.read");
       case "GET_UNIT_DEBT_TREND":
         return requires("charges.read", "units.read");
@@ -1459,9 +2580,12 @@ private getAndValidatePendingClarification(
       return {
         answer: "No pude confirmar la deuda de la unidad en este momento. Reintentá en unos minutos.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("GET_UNIT_DEBT", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
           gatewayOutcome: "unavailable",
+          resolvedLevel: "P1",
+          fallbackPath: "forced_unit_debt_gateway_missing",
           responseType: "clarification",
+          p1Routed: true,
         }),
       };
     }
@@ -1499,10 +2623,12 @@ private getAndValidatePendingClarification(
       return {
         answer: "No puedo ejecutar esta consulta operativa con el rol o permisos actuales.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("GET_UNIT_DEBT", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
           gatewayOutcome: "denied",
+          resolvedLevel: "P1",
           responseType: "clarification",
           authorizationDenied: true,
+          p1Routed: true,
         }),
       };
     }
@@ -1521,10 +2647,13 @@ private getAndValidatePendingClarification(
         return {
           answer: result.answer,
           actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions("GET_UNIT_DEBT"),
-          metadata: this.buildObservabilityMetadata("GET_UNIT_DEBT", "live_data", {
+          metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
             traceId,
             gatewayOutcome: "success",
+            resolvedLevel: "P1",
+            toolName: route.toolName,
             latencyMsTotal: Date.now() - startedAt,
+            latencyMsGateway: Date.now() - startedAt,
             p1Routed: true,
           }),
         };
@@ -1532,8 +2661,11 @@ private getAndValidatePendingClarification(
       return {
         answer: "No encontré una coincidencia única para la unidad indicada. Verificá unidad y torre exactas.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("GET_UNIT_DEBT", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
           gatewayOutcome: "invalid_payload",
+          resolvedLevel: "P1",
+          toolName: route.toolName,
+          fallbackPath: "forced_unit_debt_no_match",
           responseType: "clarification",
           p1Routed: true,
         }),
@@ -1542,8 +2674,11 @@ private getAndValidatePendingClarification(
       return {
         answer: "No pude confirmar la deuda de la unidad en este momento. Reintentá en unos minutos.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("GET_UNIT_DEBT", "live_data", {
+        metadata: this.buildObservabilityMetadata(context, "GET_UNIT_DEBT", "live_data", {
           gatewayOutcome: "unavailable",
+          resolvedLevel: "P1",
+          toolName: route.toolName,
+          fallbackPath: "forced_unit_debt_gateway_error",
           responseType: "clarification",
           p1Routed: true,
         }),
@@ -1566,7 +2701,7 @@ private getAndValidatePendingClarification(
 
     const route = this.resolveAggregateRoute(normalized);
     if (!route) {
-      return this.buildAggregateScopeClarification("GET_COLLECTIONS_SUMMARY");
+      return this.buildAggregateScopeClarification(context, "GET_COLLECTIONS_SUMMARY");
     }
 
     if (!this.canRunReadOnlyIntent(route.intentCode, context)) {
@@ -1585,12 +2720,15 @@ private getAndValidatePendingClarification(
         return {
           answer: result.answer,
           actions: result.actions?.length ? result.actions : this.getDefaultReadOnlyActions(route.intentCode),
-          metadata: this.buildObservabilityMetadata(route.intentCode, "live_data", {
+          metadata: this.buildObservabilityMetadata(context, route.intentCode, "live_data", {
             gatewayOutcome: "success",
+            resolvedLevel: "P1",
+            toolName: route.toolName,
             responseType:
               typeof result.metadata?.responseType === "string"
                 ? String(result.metadata?.responseType)
                 : undefined,
+            latencyMsGateway: 0,
             p1Routed: true,
           }),
         };
@@ -1599,7 +2737,7 @@ private getAndValidatePendingClarification(
       // fallthrough to controlled clarification
     }
 
-    return this.buildAggregateScopeClarification(route.intentCode);
+    return this.buildAggregateScopeClarification(context, route.intentCode);
   }
 
   private resolveAggregateRoute(normalizedQuestion: string): {
@@ -1696,11 +2834,12 @@ private getAndValidatePendingClarification(
 
   private buildNonGenericClarification(
     question: string,
-    intentCode: string
+    intentCode: string,
+    context: ResolvedAssistantContext
   ): DataBackedAnswerResult | null {
     const normalized = this.normalizeText(question);
     if (this.isAggregateDebtQuery(normalized)) {
-      return this.buildAggregateScopeClarification(intentCode);
+      return this.buildAggregateScopeClarification(context, intentCode);
     }
 
     const isUnitLookupIntent =
@@ -1708,21 +2847,24 @@ private getAndValidatePendingClarification(
       intentCode === "GET_UNIT_PRIMARY_RESIDENT" ||
       intentCode === "GET_LAST_PAYMENT";
     if (isUnitLookupIntent && this.containsUnitAndBuildingTokens(question)) {
-      return this.buildUnitLookupClarification(intentCode);
+      return this.buildUnitLookupClarification(context, intentCode);
     }
 
     return null;
   }
 
   private buildAggregateScopeClarification(
+    context: ResolvedAssistantContext,
     intentCode: string
   ): DataBackedAnswerResult {
     return {
       answer:
         "Para responder en forma operativa necesito acotar el alcance mínimo: indicá torre/edificio o período (por ejemplo: Torre A, últimos 3 meses).",
       actions: [],
-      metadata: this.buildObservabilityMetadata(intentCode, "live_data", {
+      metadata: this.buildObservabilityMetadata(context, intentCode, "live_data", {
         gatewayOutcome: "invalid_payload",
+        resolvedLevel: "P1",
+        fallbackPath: "aggregate_scope_required",
         responseType: "clarification",
         p1Routed: true,
       }),
@@ -1730,14 +2872,17 @@ private getAndValidatePendingClarification(
   }
 
   private buildUnitLookupClarification(
+    context: ResolvedAssistantContext,
     intentCode: string
   ): DataBackedAnswerResult {
     return {
       answer:
         "No encontré una coincidencia única para la unidad indicada. Verificá unidad y torre exactas.",
       actions: [],
-      metadata: this.buildObservabilityMetadata(intentCode, "live_data", {
+      metadata: this.buildObservabilityMetadata(context, intentCode, "live_data", {
         gatewayOutcome: "invalid_payload",
+        resolvedLevel: "P1",
+        fallbackPath: "unit_lookup_ambiguous",
         responseType: "clarification",
         p1Routed: true,
       }),
@@ -1745,7 +2890,17 @@ private getAndValidatePendingClarification(
   }
 
   private buildPaymentOperationalFallback(
-    question: string
+    question: string,
+    context: ResolvedAssistantContext,
+    options?: {
+      gatewayOutcome?: GatewayOutcome;
+      resolvedLevel?: AssistantResolvedLevel;
+      fallbackPath?: string;
+      latencyMsGateway?: number;
+      latencyMsTotal?: number;
+      latencyMsRouting?: number;
+      intentCode?: BuildingOSCanonicalIntentCode;
+    }
   ): DataBackedAnswerResult | null {
     const normalized = this.normalizeText(question);
     if (!normalized.includes("pago")) {
@@ -1764,10 +2919,15 @@ private getAndValidatePendingClarification(
         answer:
           "Para buscar pagos de una unidad necesito el dato faltante: torre/edificio.",
         actions: [],
-        metadata: this.buildObservabilityMetadata("GET_LAST_PAYMENT", "live_data", {
-          gatewayOutcome: "invalid_payload",
+        metadata: this.buildObservabilityMetadata(context, options?.intentCode ?? "GET_LAST_PAYMENT", "live_data", {
+          gatewayOutcome: options?.gatewayOutcome ?? "invalid_payload",
+          resolvedLevel: options?.resolvedLevel ?? "FALLBACK",
+          fallbackPath: options?.fallbackPath ?? "payment_missing_building_token",
           responseType: "clarification",
-          p1Routed: true,
+          p0Routed: true,
+          latencyMsGateway: options?.latencyMsGateway,
+          latencyMsTotal: options?.latencyMsTotal,
+          latencyMsRouting: options?.latencyMsRouting,
         }),
       };
     }
@@ -1789,10 +2949,15 @@ private getAndValidatePendingClarification(
             description: "Navigate to the Payments module",
           },
         ],
-        metadata: this.buildObservabilityMetadata("GET_PENDING_PAYMENTS", "live_data", {
-          gatewayOutcome: "invalid_payload",
+        metadata: this.buildObservabilityMetadata(context, options?.intentCode ?? "GET_PENDING_PAYMENTS", "live_data", {
+          gatewayOutcome: options?.gatewayOutcome ?? "invalid_payload",
+          resolvedLevel: options?.resolvedLevel ?? "FALLBACK",
+          fallbackPath: options?.fallbackPath ?? "payment_scope_required",
           responseType: "clarification",
           p0Routed: true,
+          latencyMsGateway: options?.latencyMsGateway,
+          latencyMsTotal: options?.latencyMsTotal,
+          latencyMsRouting: options?.latencyMsRouting,
         }),
       };
     }

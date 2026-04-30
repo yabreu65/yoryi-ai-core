@@ -17,6 +17,10 @@ export type AssistantAuthPublicStatus = {
 
 @Injectable()
 export class AssistantAuthConfigService {
+  isReady(): boolean {
+    return true;
+  }
+
   getPublicStatus(): AssistantAuthPublicStatus {
     return {
       strictMode: this.isStrictMode(),

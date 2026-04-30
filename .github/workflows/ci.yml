@@ -24,8 +24,45 @@ jobs:
       - name: Enforce architecture playbook link
         run: node scripts/check-playbook-link.mjs
 
-  build-and-test:
+  intent-library-regression:
     needs: [playbook-enforcement]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect Intent Library related changes
+        id: intentlib_changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            intentlib:
+              - 'packages/ai-adapters/src/buildingos/intent-library/**'
+              - 'packages/ai-adapters/src/buildingos/__tests__/intent-matcher*.spec.ts'
+              - 'packages/ai-adapters/src/buildingos/__tests__/intent-library*.spec.ts'
+              - 'packages/ai-adapters/src/buildingos/__tests__/buildingos.adapter.intent-library.spec.ts'
+
+      - name: Run Intent Library regression suite (blocking)
+        if: steps.intentlib_changes.outputs.intentlib == 'true'
+        run: |
+          npm run test --workspace=@yoryi/ai-adapters -- \
+            src/buildingos/intent-library/intent-library.spec.ts \
+            src/buildingos/__tests__/intent-matcher.spec.ts \
+            src/buildingos/__tests__/intent-matcher.admin.spec.ts \
+            src/buildingos/__tests__/intent-library.qa.spec.ts \
+            src/buildingos/__tests__/intent-library.admin.qa.spec.ts \
+            src/buildingos/__tests__/buildingos.adapter.intent-library.spec.ts
+
+  build-and-test:
+    needs: [playbook-enforcement, intent-library-regression]
     runs-on: ubuntu-latest
 
     steps:

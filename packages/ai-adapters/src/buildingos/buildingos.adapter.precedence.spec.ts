@@ -17,6 +17,21 @@ const ADMIN_CONTEXT: ResolvedAssistantContext = {
     "buildings.read",
     "tickets.read",
   ],
+  extra: {
+    buildingId: "EDIF-1",
+    period: "2026-04",
+    unitId: "A-1203",
+  },
+};
+
+const RESIDENT_CONTEXT: ResolvedAssistantContext = {
+  appId: "buildingos",
+  tenantId: "tenant-1",
+  userId: "resident-1",
+  role: "RESIDENT",
+  route: "/resident/payments",
+  currentModule: "payments",
+  permissions: ["charges.read", "payments.read"],
 };
 
 describe("BuildingOSAdapter routing precedence", () => {
@@ -48,13 +63,15 @@ describe("BuildingOSAdapter routing precedence", () => {
     const adapter = new BuildingOSAdapter({ readOnlyQueryGateway });
 
     const result = await adapter.resolveDataBackedAnswer({
-      question: "dashboard deuda vencida",
+      question: "tengo deuda vencida en mi unidad",
       context: ADMIN_CONTEXT,
     });
 
     expect(result).not.toBeNull();
-    expect(result?.answer).toBe("P0 answer");
+    expect(result?.answer).toContain("deuda vencida");
     expect(result?.metadata?.intentCode).toBe("GET_OVERDUE_UNITS");
+    expect(result?.metadata?.resolvedLevel).toBe("P0");
+    expect(typeof result?.metadata?.traceId).toBe("string");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.intentCode).toBe("GET_OVERDUE_UNITS");
   });
@@ -84,6 +101,8 @@ describe("BuildingOSAdapter routing precedence", () => {
     expect(result).not.toBeNull();
     expect(result?.answer).toBe("P1 answer");
     expect(result?.metadata?.intentCode).toBe("GET_LAST_PAYMENT");
+    expect(result?.metadata?.resolvedLevel).toBe("P1");
+    expect(typeof result?.metadata?.traceId).toBe("string");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.intentCode).toBe("GET_LAST_PAYMENT");
   });
@@ -102,14 +121,15 @@ describe("BuildingOSAdapter routing precedence", () => {
     const adapter = new BuildingOSAdapter({ readOnlyQueryGateway });
 
     const result = await adapter.resolveDataBackedAnswer({
-      question: "deuda vencida del edificio",
+      question: "tengo deuda vencida en mi unidad",
       context: ADMIN_CONTEXT,
     });
 
     expect(result).not.toBeNull();
     expect(result?.metadata?.p0Routed).toBe(true);
-    expect(result?.metadata?.gatewayUnavailable).toBe(true);
-    expect(result?.answer).toContain("Necesito una aclaracion");
+    expect(result?.metadata?.gatewayOutcome).toBe("null");
+    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_null");
+    expect(result?.answer).toContain("No encontré datos operativos");
     expect(calls).toHaveLength(1);
     expect(calls[0]?.intentCode).toBe("GET_OVERDUE_UNITS");
   });
@@ -135,5 +155,73 @@ describe("BuildingOSAdapter routing precedence", () => {
 
     expect(result).toBeNull();
     expect(calls).toHaveLength(0);
+  });
+
+  it("Case E: fallback payment clarification emits FALLBACK level metadata", async () => {
+    const readOnlyQueryGateway: BuildingOSReadOnlyQueryGateway = {
+      query: async () => ({ answer: "unexpected" }),
+    };
+
+    const adapter = new BuildingOSAdapter({ readOnlyQueryGateway });
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "busca pagos",
+      context: ADMIN_CONTEXT,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.metadata?.resolvedLevel).toBe("FALLBACK");
+    expect(typeof result?.metadata?.traceId).toBe("string");
+  });
+
+  it("Case F: resident P0 intent can resolve through intent-library tool branch", async () => {
+    const readOnlyQueryGateway: BuildingOSReadOnlyQueryGateway = {
+      query: async () => ({
+        answer: "mock",
+        metadata: {
+          amount: 1000,
+          currency: "ARS",
+          asOf: "2026-04-29",
+          status: "al dia",
+        },
+      }),
+    };
+    const adapter = new BuildingOSAdapter({ readOnlyQueryGateway });
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "cuanto debo hoy en mi unidad",
+      context: {
+        ...RESIDENT_CONTEXT,
+        extra: {
+          unitId: "A-1203",
+          buildingId: "Torre-A",
+        },
+      },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.metadata?.resolvedLevel).toBe("P0");
+    expect(result?.metadata?.gatewayOutcome).toBe("success");
+    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_success");
+    expect(result?.metadata?.intentLibraryMatched).toBe(true);
+  });
+
+  it("Case G: enforcement ON with no operational sources returns controlled P0 response", async () => {
+    process.env.ASSISTANT_P0_ENFORCEMENT_ENABLED = "true";
+    const adapter = new BuildingOSAdapter();
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "top morosos",
+      context: {
+        ...ADMIN_CONTEXT,
+        extra: {
+          buildingId: "EDIF-1",
+          period: "2026-04",
+        },
+      },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.answer).toContain("No pude confirmar datos operativos");
+    expect(result?.metadata?.resolvedLevel).toBe("P0");
+    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_error");
+    expect(result?.metadata?.gatewayOutcome).toBe("error");
   });
 });

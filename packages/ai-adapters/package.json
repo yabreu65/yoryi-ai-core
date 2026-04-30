@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp -r src/buildingos/contracts/manifests dist/buildingos/contracts/ && cp -r src/buildingos/intent-library dist/buildingos/ && echo 'Manifests and intent-library copied'",
     "dev": "tsc -w -p tsconfig.json",
     "clean": "rm -rf dist",
     "test": "vitest run",

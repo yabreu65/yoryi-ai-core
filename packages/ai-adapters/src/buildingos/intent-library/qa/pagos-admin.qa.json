@@ -1,0 +1,1343 @@
+[
+  {
+    "id": "PAY-ADM-001",
+    "question": "cual es la deuda total del edificio hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-002",
+    "question": "necesito deuda consolidada del edificio principal",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-003",
+    "question": "mostrar saldo total adeudado del consorcio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-004",
+    "question": "dame deuda global del edificio al corte actual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-005",
+    "question": "cuanto debe el edificio completo ahora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-006",
+    "question": "resumen operativo de deuda total del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-007",
+    "question": "consulta rapida deuda total edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-008",
+    "question": "quiero ver deuda acumulada del edificio en tiempo real",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-009",
+    "question": "deuda total del edificio por administracion",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-010",
+    "question": "indicame monto de deuda general del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-011",
+    "question": "mostrar morosidad de unidades vencidas del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-012",
+    "question": "cuantas unidades estan vencidas hoy en el edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-013",
+    "question": "necesito estado operativo de morosos por edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-014",
+    "question": "dame unidades con deuda vencida activas",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-015",
+    "question": "listado inmediato de morosidad por unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-016",
+    "question": "consulta de unidades vencidas en edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-017",
+    "question": "quiero ver mora actual del edificio por unidades",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-018",
+    "question": "morosos activos hoy en el consorcio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-019",
+    "question": "panel operativo de vencidos por unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-020",
+    "question": "cantidad de unidades en mora del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-021",
+    "question": "necesito top deudores del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-022",
+    "question": "ranking de unidades mas deudoras hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-023",
+    "question": "quienes son los mayores deudores del consorcio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-024",
+    "question": "mostrar top morosos del edificio ahora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-025",
+    "question": "lista de deudores principales por monto",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-026",
+    "question": "cuales unidades concentran mas deuda",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-027",
+    "question": "top deuda por unidad del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-028",
+    "question": "ordenar deudores del edificio de mayor a menor",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-029",
+    "question": "resumen operativo top morosos por unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-030",
+    "question": "consulta de top deudores activos edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-031",
+    "question": "deuda vencida por torre del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-032",
+    "question": "necesito deuda por torre a nivel operativo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-033",
+    "question": "mostrar mora por torre ahora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-034",
+    "question": "consulta de deuda torre a torre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-035",
+    "question": "resumen vencidos por cada torre del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-036",
+    "question": "cuanto debe cada torre hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-037",
+    "question": "panel operativo deuda por torre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-038",
+    "question": "comparar deuda entre torres del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-039",
+    "question": "dame deuda consolidada por torre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-040",
+    "question": "listame deuda vencida por torre principal",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-041",
+    "question": "aging de deuda del edificio por buckets",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-042",
+    "question": "distribucion de deuda 0 30 31 60 61 90 90 mas",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-043",
+    "question": "necesito tramos de antiguedad de deuda edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-044",
+    "question": "mostrar aging operativo del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-045",
+    "question": "cuales son los buckets de mora del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-046",
+    "question": "dame aging de deuda vencida por rango de dias",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-047",
+    "question": "panel de antiguedad de deuda por edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-048",
+    "question": "consulta aging building en buckets",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-049",
+    "question": "resumen de deuda por tramos de mora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-050",
+    "question": "medicion de aging deuda edificio actual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-051",
+    "question": "ultimo pago recibido global del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-052",
+    "question": "mostrar ultimo pago ingresado del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-053",
+    "question": "cual fue el ultimo pago acreditado global",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-054",
+    "question": "necesito ultimo pago recibido por torre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-055",
+    "question": "dame el pago mas reciente del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-056",
+    "question": "consulta operativa ultimo pago del consorcio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-057",
+    "question": "ultimo pago confirmado en torre a",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-058",
+    "question": "pagos recientes global y por torre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-059",
+    "question": "momento del ultimo pago recibido edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-060",
+    "question": "cual es la ultima cobranza registrada",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-061",
+    "question": "tendencia de morosidad del edificio ultimos meses",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-062",
+    "question": "evolucion de unidades vencidas del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-063",
+    "question": "como viene la mora del edificio en el tiempo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-064",
+    "question": "necesito curva de morosidad mensual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-065",
+    "question": "mostrar tendencia de vencidos por edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-066",
+    "question": "analisis historico de morosos del edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-067",
+    "question": "variacion mensual de morosidad edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-068",
+    "question": "comparativa temporal de mora del consorcio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-069",
+    "question": "seguimiento de morosidad por periodo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-070",
+    "question": "progresion de unidades en mora edificio",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-ADM-071",
+    "question": "cual es la deuda total del edificio hoy",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-072",
+    "question": "deuda consolidada del edificio principal",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-073",
+    "question": "morosidad de unidades vencidas del edificio",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-074",
+    "question": "necesito top deudores del edificio",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-075",
+    "question": "deuda vencida por torre",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "towerId"
+      ],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-076",
+    "question": "necesito deuda por torre",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "towerId"
+      ],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-077",
+    "question": "aging de deuda por buckets",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-078",
+    "question": "ultimo pago recibido global del edificio",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "towerId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-079",
+    "question": "cual es la ultima cobranza registrada",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId",
+        "towerId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-080",
+    "question": "tendencia de morosidad ultimos meses",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-081",
+    "question": "tendencia de deuda en el ultimo ano",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_TREND_LAST_YEAR",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-082",
+    "question": "tendencia deuda ultimos n meses del edificio",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_12MONTH_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-083",
+    "question": "balance por periodo cobrado vs pendiente",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-084",
+    "question": "performance de cobranzas por mes",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-085",
+    "question": "comparar torres en morosidad y cobro",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_COLLECTION_RATE_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "towerId"
+      ],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-086",
+    "question": "benchmark de torres en morosidad",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_COLLECTION_RATE_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "towerId"
+      ],
+      "toolName": "analytics_debt_by_tower",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-087",
+    "question": "unidades con mayor crecimiento de deuda",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_CHARGED_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-088",
+    "question": "que unidades crecieron mas en deuda",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_CHARGED_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-089",
+    "question": "cuanto debe el edificio completo ahora",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-090",
+    "question": "variacion mensual de morosidad edificio",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_building_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-ADM-091",
+    "question": "pronostico del clima para manana",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-092",
+    "question": "quien gano el clasico ayer",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-093",
+    "question": "receta de brownies sin gluten",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-094",
+    "question": "quiero reservar hotel en madrid",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-095",
+    "question": "explicame kubernetes desde cero",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-096",
+    "question": "noticias de inteligencia artificial hoy",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-097",
+    "question": "cuanto mide la torre eiffel",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-098",
+    "question": "dame un plan de entrenamiento de running",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-099",
+    "question": "como configurar un router wifi en casa",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-ADM-100",
+    "question": "recomendame una serie para ver esta noche",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  }
+]

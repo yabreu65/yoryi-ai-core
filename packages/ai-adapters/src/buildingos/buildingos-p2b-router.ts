@@ -151,7 +151,7 @@ export class BuildingOSP2BRouter {
       return null;
     }
 
-    const toolName = this.resolveToolName(best.route.toolName, filters.statuses ?? []);
+    const toolName = this.resolveToolName(best.route.toolName, (filters.statuses ?? []) as string[]);
 
     const requiresBuilding =
       this.manifest.defaults.requireBuildingWhenMultiBuilding &&
