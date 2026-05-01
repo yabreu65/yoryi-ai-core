@@ -1,4 +1,5 @@
 import type { GatewayOutcome, FallbackPath } from "../observability/enums";
+import type { IntentFamily } from "../intent-library/schema";
 
 export const ASSISTANT_RESOLVED_LEVELS = [
   "P0",
@@ -40,4 +41,20 @@ export type AssistantTurnCompletedMetadata = {
   intentLibraryIntentCode?: string;
   clarificationAsked?: boolean;
   missingEntities?: string[];
+  defaultsApplied?: string[];
+  familyChosen?: IntentFamily;
+};
+
+export type AssistantTurnDebugMetadata = {
+  matchedUtterance?: string;
+  topCandidates?: Array<{
+    intentCode: string;
+    level: string;
+    confidence: number;
+    family?: IntentFamily;
+  }>;
+};
+
+export type AssistantTurnCompletedMetadataWithDebug = AssistantTurnCompletedMetadata & {
+  debug?: AssistantTurnDebugMetadata;
 };

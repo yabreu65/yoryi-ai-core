@@ -1,5 +1,15 @@
 export type IntentLevel = "P0" | "P1";
 export type IntentAudience = "RESIDENT" | "ADMIN" | "BOTH";
+export type IntentFamily =
+  | "TOP_N"
+  | "BREAKDOWN"
+  | "TOTAL"
+  | "TREND"
+  | "AGING"
+  | "OVERDUE"
+  | "PAYMENT_STATUS"
+  | "PAYMENT_HISTORY"
+  | "LEGACY";
 
 export type IntentLibraryCanonicalAnswer = {
   resident: string;
@@ -23,6 +33,7 @@ export type IntentLibraryIntent = {
   intentCode: string;
   level: IntentLevel;
   audience: IntentAudience;
+  family?: IntentFamily;
   utterances: string[];
   canonicalAnswer: IntentLibraryCanonicalAnswer;
   requiredEntities: string[];
@@ -39,6 +50,17 @@ export type IntentLibraryFile = {
 
 const VALID_LEVELS: IntentLevel[] = ["P0", "P1"];
 const VALID_AUDIENCES: IntentAudience[] = ["RESIDENT", "ADMIN", "BOTH"];
+const VALID_FAMILIES: IntentFamily[] = [
+  "TOP_N",
+  "BREAKDOWN",
+  "TOTAL",
+  "TREND",
+  "AGING",
+  "OVERDUE",
+  "PAYMENT_STATUS",
+  "PAYMENT_HISTORY",
+  "LEGACY",
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -137,6 +159,10 @@ function validateIntent(
 
   if (!VALID_AUDIENCES.includes(value.audience as IntentAudience)) {
     errors.push("audience must be RESIDENT | ADMIN | BOTH");
+  }
+
+  if (value.family !== undefined && !VALID_FAMILIES.includes(value.family as IntentFamily)) {
+    errors.push("family must be a valid IntentFamily");
   }
 
   const utterances = asStringArray(value.utterances);

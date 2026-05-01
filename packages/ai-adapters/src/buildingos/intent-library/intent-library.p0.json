@@ -6,6 +6,7 @@
       "intentCode": "GET_UNIT_DEBT",
       "level": "P0",
       "audience": "RESIDENT",
+      "family": "TOTAL",
       "utterances": [
         "cuanto debo hoy en mi unidad",
         "necesito saber mi deuda total actual",
@@ -49,6 +50,7 @@
       "intentCode": "GET_PENDING_PAYMENTS",
       "level": "P0",
       "audience": "BOTH",
+      "family": "PAYMENT_STATUS",
       "utterances": [
         "tengo pagos pendientes por confirmar",
         "lista de pagos pendientes de acreditacion",
@@ -90,6 +92,7 @@
       "intentCode": "GET_OVERDUE_UNITS",
       "level": "P0",
       "audience": "BOTH",
+      "family": "OVERDUE",
       "utterances": [
         "tengo deuda vencida en mi unidad",
         "mi cuenta entro en mora",
@@ -136,6 +139,7 @@
       "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
       "level": "P0",
       "audience": "BOTH",
+      "family": "PAYMENT_STATUS",
       "utterances": [
         "subi pago pero sin comprobante",
         "pagos que no tienen recibo cargado",
@@ -176,6 +180,7 @@
       "intentCode": "GET_REJECTED_TODAY",
       "level": "P0",
       "audience": "BOTH",
+      "family": "PAYMENT_STATUS",
       "utterances": [
         "hoy me rechazaron un pago",
         "pagos rechazados en el dia",
@@ -218,6 +223,7 @@
       "intentCode": "GET_BUILDING_DEBT_TREND",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "evolucion mensual de deuda del edificio",
         "serie mensual de deuda del edificio",
@@ -261,6 +267,7 @@
       "intentCode": "GET_UNIT_OVERDUE_TREND",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "OVERDUE",
       "utterances": [
         "mostrar morosidad de unidades vencidas del edificio",
         "cuantas unidades estan vencidas hoy en el edificio",
@@ -305,6 +312,7 @@
       "intentCode": "UNIT_DEBT_OCCUPANCY",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "TOP_N",
       "utterances": [
         "necesito top deudores del edificio",
         "ranking de unidades mas deudoras hoy",
@@ -348,6 +356,7 @@
       "intentCode": "GET_DEBT_BY_TOWER",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "BREAKDOWN",
       "utterances": [
         "deuda vencida por torre del edificio",
         "necesito deuda por torre a nivel operativo",
@@ -393,6 +402,7 @@
       "intentCode": "DEBT_AGING_BY_BUILDING",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "AGING",
       "utterances": [
         "aging de deuda del edificio por buckets",
         "distribucion de deuda 0 30 31 60 61 90 90 mas",
@@ -438,6 +448,7 @@
       "intentCode": "COLLECTION_EFFICIENCY",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "BREAKDOWN",
       "utterances": [
         "ultimo pago recibido global del edificio",
         "mostrar ultimo pago ingresado del edificio",
@@ -484,6 +495,7 @@
       "intentCode": "GET_BUILDING_DEBT_TOTAL",
       "level": "P0",
       "audience": "ADMIN",
+      "family": "TOTAL",
       "utterances": [
         "¿Cuánta deuda total tiene el edificio?",
         "¿Cuál es la deuda total del edificio?",

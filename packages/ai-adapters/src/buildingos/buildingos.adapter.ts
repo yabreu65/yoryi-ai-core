@@ -24,9 +24,9 @@ import { BuildingOSP2BRouter } from "./buildingos-p2b-router";
 import { BuildingOSP3Router } from "./buildingos-p3-router";
 import type {
   AssistantResolvedLevel,
-  AssistantTurnCompletedMetadata,
+  AssistantTurnCompletedMetadataWithDebug,
+  AssistantTurnDebugMetadata,
   AssistantTurnGatewayOutcome,
-  FALLBACK_PATHS,
 } from "./contracts/assistant-turn-metadata";
 import {
   assertFallbackPath,
@@ -44,7 +44,7 @@ import {
   executeIntentLibraryTool,
   renderCanonicalTemplate,
 } from "./intent-library/tool-executor";
-import type { IntentLibraryIntent } from "./intent-library/schema";
+import type { IntentFamily, IntentLibraryIntent } from "./intent-library/schema";
 import { validateEntities, EntityValidationResult } from "./intent-library/entity-validator";
 import { BuildingOSEntityLookupGateway } from "./intent-library/entity-lookup-gateway";
 import { AnswerCache } from "./cache/answer-cache";
@@ -84,6 +84,10 @@ type IntentLibraryRequestState = {
   clarificationAsked: boolean;
   missingEntities: string[];
   fallbackPath?: string;
+  defaultsApplied?: string[];
+  familyChosen?: IntentFamily;
+  matchedUtterance?: string;
+  topCandidates?: Array<{ intentCode: string; level: string; confidence: number; family?: IntentFamily }>;
 };
 
 type BuildingOSActionRegistryEntry = {
@@ -324,6 +328,10 @@ private getAndValidatePendingClarification(
           intentLibraryIntentCode?: string;
           clarificationAsked?: boolean;
           missingEntities?: string[];
+          defaultsApplied?: string[];
+          familyChosen?: IntentFamily;
+          matchedUtterance?: string;
+          topCandidates?: Array<{ intentCode: string; level: string; confidence: number; family?: IntentFamily }>;
         },
     maybeOptions?: {
       context?: ResolvedAssistantContext;
@@ -350,8 +358,12 @@ private getAndValidatePendingClarification(
       intentLibraryIntentCode?: string;
       clarificationAsked?: boolean;
       missingEntities?: string[];
+      defaultsApplied?: string[];
+      familyChosen?: IntentFamily;
+      matchedUtterance?: string;
+      topCandidates?: Array<{ intentCode: string; level: string; confidence: number; family?: IntentFamily }>;
     }
-  ): AssistantTurnCompletedMetadata & Record<string, unknown> {
+  ): AssistantTurnCompletedMetadataWithDebug & Record<string, unknown> {
     const hasContextAsFirstArg =
       typeof contextOrIntent !== "string" && contextOrIntent !== null;
     const context =
@@ -410,7 +422,7 @@ private getAndValidatePendingClarification(
       options?.latencyMsRouting ?? options?.latencyMsTotal ?? 0
     );
 
-    const base: AssistantTurnCompletedMetadata & Record<string, unknown> = {
+    const base: AssistantTurnCompletedMetadataWithDebug & Record<string, unknown> = {
       traceId: options?.traceId ?? generateTraceId(),
       timestamp: new Date().toISOString(),
       tenantId: context.tenantId ?? "unknown-tenant",
@@ -454,7 +466,23 @@ private getAndValidatePendingClarification(
         options?.missingEntities ??
         contextIntentLibraryState?.missingEntities ??
         [],
+      defaultsApplied:
+        options?.defaultsApplied ??
+        contextIntentLibraryState?.defaultsApplied ??
+        [],
+      familyChosen:
+        options?.familyChosen ??
+        contextIntentLibraryState?.familyChosen,
     };
+    const debugEnabled = this.isIntentDebugEnabled(context);
+    const matchedUtterance = options?.matchedUtterance ?? contextIntentLibraryState?.matchedUtterance;
+    const topCandidates = options?.topCandidates ?? contextIntentLibraryState?.topCandidates;
+    if (debugEnabled) {
+      const debug: AssistantTurnDebugMetadata = {};
+      if (matchedUtterance) debug.matchedUtterance = matchedUtterance;
+      if (topCandidates) debug.topCandidates = topCandidates;
+      if (Object.keys(debug).length > 0) base.debug = debug;
+    }
     if (options?.traceId) base.traceId = options.traceId;
     if (options?.clarificationOptionChosen) base.clarificationOptionChosen = options.clarificationOptionChosen;
     if (options?.followUpExecuted) base.followUpExecuted = options.followUpExecuted;
@@ -466,6 +494,10 @@ private getAndValidatePendingClarification(
     if (options?.p0Routed) base.p0Routed = options.p0Routed;
     if (options?.authorizationDenied) base.authorizationDenied = options.authorizationDenied;
     return base;
+  }
+
+  private isIntentDebugEnabled(context: ResolvedAssistantContext): boolean {
+    return process.env.ASSISTANT_INTENT_DEBUG_ENABLED === "true" || context.extra?.intentDebug === true;
   }
 
   private resolveBuildingIdFromContext(
@@ -524,6 +556,20 @@ private getAndValidatePendingClarification(
         typeof record.fallbackPath === "string"
           ? record.fallbackPath
           : undefined,
+      defaultsApplied: Array.isArray(record.defaultsApplied)
+        ? record.defaultsApplied.map((value) => String(value))
+        : [],
+      familyChosen:
+        typeof record.familyChosen === "string"
+          ? record.familyChosen as IntentFamily
+          : undefined,
+      matchedUtterance:
+        typeof record.matchedUtterance === "string"
+          ? record.matchedUtterance
+          : undefined,
+      topCandidates: Array.isArray(record.topCandidates)
+        ? record.topCandidates as Array<{ intentCode: string; level: string; confidence: number; family?: IntentFamily }>
+        : undefined,
     };
   }
 
@@ -592,7 +638,7 @@ private getAndValidatePendingClarification(
         context.extra.period.trim().length > 0) ||
       /\b(20\d{2})[-/](0[1-9]|1[0-2])\b/.test(normalized) ||
       /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/.test(normalized) ||
-      /\b(este mes|hoy|actual)\b/.test(normalized);
+      /\b(este mes|mes actual|hoy|today|actual)\b/.test(normalized);
 
     for (const entity of requiredEntities) {
       if (entity === "tenantId" && !context.tenantId) {
@@ -611,6 +657,61 @@ private getAndValidatePendingClarification(
     }
 
     return missingEntities;
+  }
+
+  /**
+   * Apply family-level defaults before deciding whether to clarify.
+   * Snapshot families are current-state by default; TREND gets a period default.
+   */
+  private applyMissingEntityDefaults(
+    intentOrCode: IntentLibraryIntent | string,
+    missingEntities: string[],
+    context: ResolvedAssistantContext
+  ): { remaining: string[]; applied: string[] } {
+    const intent = typeof intentOrCode === "string" ? getIntentLibraryIntent(intentOrCode) : intentOrCode;
+    const family = intent?.family;
+    const defaultsApplicable = new Map<string, () => void>();
+    const snapshotFamilies = new Set<IntentFamily>(["TOTAL", "OVERDUE", "AGING", "TOP_N", "BREAKDOWN"]);
+
+    const periodAlreadySet =
+      typeof context.extra?.period === "string" &&
+      context.extra.period.trim().length > 0;
+
+    if (!periodAlreadySet) {
+      if (family === "TREND" && missingEntities.includes("period")) {
+        defaultsApplicable.set("period", () => {
+          context.extra = {
+            ...context.extra,
+            period: this.getCurrentPeriod(),
+          };
+        });
+      } else if (family && snapshotFamilies.has(family)) {
+        defaultsApplicable.set("period", () => {
+          context.extra = {
+            ...context.extra,
+            period: "today",
+          };
+        });
+      }
+    }
+
+    const remaining = [...missingEntities];
+    const applied: string[] = [];
+    for (const [entity, applyDefault] of defaultsApplicable) {
+      const idx = remaining.indexOf(entity);
+      applyDefault();
+      applied.push(entity);
+      if (idx !== -1) {
+        remaining.splice(idx, 1);
+      }
+    }
+
+    return { remaining, applied };
+  }
+
+  private getCurrentPeriod(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }
 
   private extractPeriodFromQuestion(question: string): string | undefined {
@@ -648,6 +749,10 @@ private getAndValidatePendingClarification(
       const now = new Date();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       return `${now.getFullYear()}-${month}`;
+    }
+
+    if (/\b(hoy|today|actual)\b/.test(normalized)) {
+      return "today";
     }
 
     return undefined;
@@ -795,7 +900,18 @@ private getAndValidatePendingClarification(
       return null;
     }
 
-    const missingEntities = this.detectMissingIntentEntities(
+    let missingEntities = this.detectMissingIntentEntities(
+      intentEntry.requiredEntities,
+      question,
+      context
+    );
+
+    const defaultsResult = this.applyMissingEntityDefaults(
+      intentEntry,
+      missingEntities,
+      context
+    );
+    missingEntities = this.detectMissingIntentEntities(
       intentEntry.requiredEntities,
       question,
       context
@@ -808,6 +924,11 @@ private getAndValidatePendingClarification(
       clarificationAsked: false,
       missingEntities: [],
       fallbackPath: "intent_library_no_match",
+      defaultsApplied: defaultsResult.applied,
+      familyChosen: match.familyChosen,
+      ...(this.isIntentDebugEnabled(context)
+        ? { matchedUtterance: match.matchedUtterance, topCandidates: match.topCandidates }
+        : {}),
     };
 
     if (missingEntities.length > 0) {
@@ -1358,7 +1479,7 @@ if (execution.status === "success") {
         metadata: this.buildObservabilityMetadata(context, "UNKNOWN", "live_data", {
           gatewayOutcome: "denied",
           resolvedLevel: "FALLBACK",
-          fallbackPath: "mutation_blocked",
+          fallbackPath: "blocked_mutation",
           latencyMsTotal: Date.now() - turnStartedAt,
           latencyMsRouting: Date.now() - turnStartedAt,
           responseType: "clarification",
@@ -2539,6 +2660,10 @@ if (execution.status === "success") {
       return null;
     }
 
+    if (!context.tenantId || !context.userId) {
+      return null;
+    }
+
     const startedAt = Date.now();
     try {
       const debtSummary = await this.financialGateway.getResidentDebtSummary({
@@ -2735,7 +2860,11 @@ if (execution.status === "success") {
 
     const p1Route = this.p1Router.route(question);
     if (!p1Route || p1Route.intentCode !== "GET_UNIT_DEBT") {
-      const forcedRoute = {
+      const forcedRoute: {
+        intentCode: BuildingOSCanonicalIntentCode;
+        toolName: NonNullable<BuildingOSReadOnlyQueryInput["toolName"]>;
+        toolInput: Record<string, unknown>;
+      } = {
         intentCode: "GET_UNIT_DEBT" as BuildingOSCanonicalIntentCode,
         toolName: "get_unit_balance",
         toolInput: {
@@ -2777,7 +2906,7 @@ if (execution.status === "success") {
     }
 
     try {
-      const result = await this.readOnlyQueryGateway.query({
+      const result = await this.readOnlyQueryGateway!.query({
         intentCode: "GET_UNIT_DEBT",
         question,
         context,

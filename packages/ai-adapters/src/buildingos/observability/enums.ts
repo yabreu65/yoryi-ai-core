@@ -76,3 +76,29 @@ export function assertFallbackPath(v: unknown, context?: string): FallbackPath {
   }
   return v;
 }
+
+export const RESOLVED_PATHS = [
+  "intent_library",
+  "p0",
+  "p1",
+  "p2b",
+  "p2",
+  "p3",
+  "bridge_blocked",
+  "fallback",
+  "hitl",
+] as const;
+
+export type ResolvedPath = (typeof RESOLVED_PATHS)[number];
+
+export function isValidResolvedPath(v: unknown): v is ResolvedPath {
+  return RESOLVED_PATHS.includes(v as ResolvedPath);
+}
+
+export function assertResolvedPath(v: unknown, context?: string): ResolvedPath {
+  if (!isValidResolvedPath(v)) {
+    const msg = context ? `Invalid resolvedPath: ${v} (${context})` : `Invalid resolvedPath: ${v}`;
+    throw new Error(msg);
+  }
+  return v;
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "FAM-RES-001",
+    "question": "cuanto debo hoy en mi unidad",
+    "role": "RESIDENT",
+    "expectedFamily": "TOTAL",
+    "expectedIntent": "GET_UNIT_DEBT"
+  },
+  {
+    "id": "FAM-RES-002",
+    "question": "cual fue mi ultimo pago registrado",
+    "role": "RESIDENT",
+    "expectedFamily": "PAYMENT_HISTORY",
+    "expectedIntent": "GET_LAST_PAYMENT"
+  },
+  {
+    "id": "FAM-RES-003",
+    "question": "estado de cuenta del periodo actual",
+    "role": "RESIDENT",
+    "expectedFamily": "TOTAL",
+    "expectedIntent": "GET_UNIT_BALANCE_BY_PERIOD"
+  },
+  {
+    "id": "FAM-RES-004",
+    "question": "tendencia de mi deuda ultimos meses",
+    "role": "RESIDENT",
+    "expectedFamily": "TREND",
+    "expectedIntent": "GET_UNIT_DEBT_TREND"
+  }
+]

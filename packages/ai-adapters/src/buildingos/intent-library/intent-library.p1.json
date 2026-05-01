@@ -6,6 +6,7 @@
       "intentCode": "GET_LAST_PAYMENT",
       "level": "P1",
       "audience": "RESIDENT",
+      "family": "PAYMENT_HISTORY",
       "utterances": [
         "cual fue mi ultimo pago registrado",
         "mostrar ultimo comprobante acreditado",
@@ -47,6 +48,7 @@
       "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
       "level": "P1",
       "audience": "RESIDENT",
+      "family": "TOTAL",
       "utterances": [
         "estado de cuenta del periodo actual",
         "saldo por periodo de mi unidad",
@@ -92,6 +94,7 @@
       "intentCode": "GET_DEBT_AGING",
       "level": "P1",
       "audience": "BOTH",
+      "family": "AGING",
       "utterances": [
         "que pasa si pago tarde la expensa",
         "como se calcula mora por atraso",
@@ -133,6 +136,7 @@
       "intentCode": "GET_UNIT_DEBT_TREND",
       "level": "P1",
       "audience": "RESIDENT",
+      "family": "TREND",
       "utterances": [
         "evolucion de mi deuda en los ultimos meses",
         "tendencia de saldo adeudado por unidad",
@@ -176,6 +180,7 @@
       "intentCode": "GET_UNIT_COLLECTED_TREND",
       "level": "P1",
       "audience": "RESIDENT",
+      "family": "TREND",
       "utterances": [
         "historial de pagos aplicados de mi unidad",
         "tendencia de cobranzas ya pagadas",
@@ -219,6 +224,7 @@
       "intentCode": "GET_BUILDING_OVERDUE_TREND",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "tendencia de morosidad del edificio ultimos meses",
         "evolucion de unidades vencidas del edificio",
@@ -262,6 +268,7 @@
       "intentCode": "GET_BUILDING_TREND_LAST_YEAR",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "tendencia de deuda del edificio en el ultimo ano",
         "evolucion anual de deuda del edificio",
@@ -305,6 +312,7 @@
       "intentCode": "GET_12MONTH_TREND",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "tendencia deuda ultimos n meses del edificio",
         "quiero deuda rolling de los ultimos meses",
@@ -348,6 +356,7 @@
       "intentCode": "GET_COLLECTIONS_TREND",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "balance por periodo del edificio cobrado vs pendiente",
         "necesito tendencia de cobranzas por periodo",
@@ -392,6 +401,7 @@
       "intentCode": "GET_COLLECTION_RATE_TREND",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "comparar torre a vs torre b en morosidad y cobro",
         "necesito comparativa de torres por performance de pago",
@@ -439,6 +449,7 @@
       "intentCode": "GET_UNIT_CHARGED_TREND",
       "level": "P1",
       "audience": "ADMIN",
+      "family": "TREND",
       "utterances": [
         "unidades con mayor crecimiento de deuda",
         "cuales unidades empeoraron mas su deuda",

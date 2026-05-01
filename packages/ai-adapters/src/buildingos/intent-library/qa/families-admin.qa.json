@@ -1,0 +1,43 @@
+[
+  {
+    "id": "FAM-ADM-001",
+    "question": "top 10 deudores del edificio",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TOP_N",
+    "expectedIntent": "UNIT_DEBT_OCCUPANCY"
+  },
+  {
+    "id": "FAM-ADM-002",
+    "question": "deuda por torre del edificio",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "BREAKDOWN",
+    "expectedIntent": "GET_DEBT_BY_TOWER"
+  },
+  {
+    "id": "FAM-ADM-003",
+    "question": "deuda total del edificio hoy",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TOTAL",
+    "expectedIntent": "GET_BUILDING_DEBT_TOTAL"
+  },
+  {
+    "id": "FAM-ADM-004",
+    "question": "evolucion de deuda ultimos meses",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TREND"
+  },
+  {
+    "id": "FAM-ADM-005",
+    "question": "aging de deuda del edificio por buckets",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "AGING",
+    "expectedIntent": "DEBT_AGING_BY_BUILDING"
+  },
+  {
+    "id": "FAM-ADM-006",
+    "question": "mostrar morosidad de unidades vencidas del edificio",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "OVERDUE",
+    "expectedIntent": "GET_UNIT_OVERDUE_TREND"
+  }
+]
