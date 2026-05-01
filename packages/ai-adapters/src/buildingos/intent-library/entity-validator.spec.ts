@@ -73,7 +73,7 @@ describe("Entity Validator", () => {
 
       expect((result as EntityValidationResult).ok).toBe(false);
       expect((result as EntityValidationResult).missingEntities).toEqual(["buildingId"]);
-      expect((result as EntityValidationResult).reason).toContain("does not exist");
+      expect((result as EntityValidationResult).reason).toContain("No pude validar el edificio solicitado");
     });
 
     it("should return ok=false when unit does not exist", async () => {
@@ -90,7 +90,7 @@ describe("Entity Validator", () => {
 
       expect((result as EntityValidationResult).ok).toBe(false);
       expect((result as EntityValidationResult).missingEntities).toEqual(["unitId"]);
-      expect((result as EntityValidationResult).reason).toContain("does not exist");
+      expect((result as EntityValidationResult).reason).toContain("No pude validar la unidad solicitada");
     });
 
     it("should trim whitespace from entity values", async () => {

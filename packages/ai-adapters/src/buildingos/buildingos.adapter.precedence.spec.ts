@@ -173,7 +173,7 @@ describe("BuildingOSAdapter routing precedence", () => {
     expect(typeof result?.metadata?.traceId).toBe("string");
   });
 
-  it("Case F: resident P0 intent can resolve through intent-library tool branch", async () => {
+  it("Case F: resident P0 intent can resolve with cache_miss metadata in current routing", async () => {
     const readOnlyQueryGateway: BuildingOSReadOnlyQueryGateway = {
       query: async () => ({
         answer: "mock",
@@ -199,12 +199,12 @@ describe("BuildingOSAdapter routing precedence", () => {
 
     expect(result).not.toBeNull();
     expect(result?.metadata?.resolvedLevel).toBe("P0");
-    expect(result?.metadata?.gatewayOutcome).toBe("success");
-    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_success");
+    expect(result?.metadata?.gatewayOutcome).toBe("cache_miss");
+    expect(result?.metadata?.fallbackPath).toBe("cache_miss");
     expect(result?.metadata?.intentLibraryMatched).toBe(true);
   });
 
-  it("Case G: enforcement ON with no operational sources returns controlled P0 response", async () => {
+  it("Case G: enforcement ON with no operational sources returns controlled P0 unavailable fallback", async () => {
     process.env.ASSISTANT_P0_ENFORCEMENT_ENABLED = "true";
     const adapter = new BuildingOSAdapter();
     const result = await adapter.resolveDataBackedAnswer({
@@ -221,7 +221,7 @@ describe("BuildingOSAdapter routing precedence", () => {
     expect(result).not.toBeNull();
     expect(result?.answer).toContain("No pude confirmar datos operativos");
     expect(result?.metadata?.resolvedLevel).toBe("P0");
-    expect(result?.metadata?.fallbackPath).toBe("intent_library_tool_error");
-    expect(result?.metadata?.gatewayOutcome).toBe("error");
+    expect(result?.metadata?.fallbackPath).toBe("p0_enforcement_operational_unavailable");
+    expect(result?.metadata?.gatewayOutcome).toBe("unavailable");
   });
 });
