@@ -143,6 +143,10 @@ function buildToolInput(
   } else if (intentCode === "GET_BUILDING_DEBT_TOTAL") {
     toolInput.period = "today";
   }
+  if (intentCode === "COLLECTION_EFFICIENCY") {
+    toolInput.mode = "last_payment";
+    toolInput.ranking = 1;
+  }
   return toolInput;
 }
 
@@ -326,7 +330,10 @@ export async function executeIntentLibraryTool(
     question: input.question,
     context: input.context,
     toolName: toolName as BuildingOSReadOnlyQueryInput["toolName"],
-    toolInput: buildToolInput(input.intent.intentCode, input.entities),
+    toolInput: {
+      ...buildToolInput(input.intent.intentCode, input.entities),
+      ...(input.context.role === "RESIDENT" ? { scope: "self" } : {}),
+    },
   };
 
   try {

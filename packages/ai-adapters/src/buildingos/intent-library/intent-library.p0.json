@@ -448,7 +448,7 @@
       "intentCode": "COLLECTION_EFFICIENCY",
       "level": "P0",
       "audience": "ADMIN",
-      "family": "BREAKDOWN",
+      "family": "PAYMENT_HISTORY",
       "utterances": [
         "ultimo pago recibido global del edificio",
         "mostrar ultimo pago ingresado del edificio",
@@ -467,14 +467,10 @@
       },
       "requiredEntities": [
         "tenantId",
-        "buildingId",
-        "towerId",
-        "period"
+        "buildingId"
       ],
       "clarificationQuestions": {
-        "missingBuildingId": "¿De qué edificio querés consultar el último pago recibido?",
-        "missingPeriod": "¿Querés el último pago de hoy, del mes o de otro período?",
-        "missingTowerId": "¿Qué torre querés usar para esta consulta?"
+        "missingBuildingId": "¿De qué edificio querés consultar el último pago recibido?"
       },
       "toolBinding": {
         "toolName": "search_payments",

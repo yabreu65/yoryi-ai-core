@@ -284,6 +284,47 @@ describe("BuildingOSAdapter + Intent Library Tool Binding", () => {
     });
   });
 
+  it("ADMIN payment history edificio usa search_payments como último pago sin pedir torre/unidad", async () => {
+    const queryMock = vi
+      .fn<BuildingOSReadOnlyQueryGateway["query"]>()
+      .mockResolvedValue({
+        answer: "gateway-answer",
+        metadata: {
+          lastPaymentAmount: 152526,
+          lastPaymentDate: "2024-05-01",
+          towerName: "Torre A",
+          status: "APPROVED",
+          currency: "ARS",
+        },
+      });
+
+    const adapter = new BuildingOSAdapter({
+      readOnlyQueryGateway: { query: queryMock },
+    });
+
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "ultimo pago recibido global del edificio",
+      context: {
+        ...ADMIN_CONTEXT,
+        extra: {
+          buildingId: "EDIF-1",
+        },
+      },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.metadata?.intentLibraryIntentCode).toBe("COLLECTION_EFFICIENCY");
+    expect(result?.metadata?.familyChosen).toBe("PAYMENT_HISTORY");
+    expect(result?.metadata?.gatewayOutcome).toBe("cache_miss");
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls[0]?.[0]?.toolName).toBe("search_payments");
+    expect(queryMock.mock.calls[0]?.[0]?.toolInput).toMatchObject({
+      buildingId: "EDIF-1",
+      mode: "last_payment",
+      ranking: 1,
+    });
+  });
+
   it("cache hit: no llama gateway y metadata cache_hit", async () => {
     const queryMock = vi
       .fn<BuildingOSReadOnlyQueryGateway["query"]>()

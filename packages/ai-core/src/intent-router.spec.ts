@@ -55,6 +55,16 @@ describe("ChatIntentRouter", () => {
     expect(route).toBe("live_data_or_knowledge");
   });
 
+  it("keeps resident self-scope debt prompts out of ambiguous route", () => {
+    const route = router.route({
+      question: "cuánto debo",
+      queryOnly: true,
+      currentModule: "general",
+    });
+
+    expect(route).toBe("live_data_or_knowledge");
+  });
+
   it("allows read-only pending payments queries that use approve keyword as question", () => {
     const route = router.route({
       question: "¿Cuántos pagos pendientes hay para aprobar hoy?",

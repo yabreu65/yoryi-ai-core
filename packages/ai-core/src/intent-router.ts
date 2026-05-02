@@ -59,6 +59,7 @@ const DOMAIN_KEYWORDS = [
   "clientes",
   "cobranza",
   "cobranzas",
+  "debo",
   "comunicado",
   "comunicados",
   "communications",

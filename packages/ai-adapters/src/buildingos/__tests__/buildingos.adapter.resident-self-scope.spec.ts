@@ -66,6 +66,28 @@ describe("BuildingOSAdapter RESIDENT self-scope", () => {
     });
   });
 
+  it("resuelve 'cuánto debo' como deuda propia self-scope", async () => {
+    const queryMock = createGatewayMock();
+    const adapter = new BuildingOSAdapter({
+      readOnlyQueryGateway: { query: queryMock },
+    });
+
+    const result = await adapter.resolveDataBackedAnswer({
+      question: "cuánto debo",
+      context: { ...RESIDENT_CONTEXT },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.metadata?.resolvedIntentCode).toBe("GET_UNIT_DEBT");
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    expect(queryMock.mock.calls[0]?.[0]?.toolName).toBe("get_unit_balance");
+    expect(queryMock.mock.calls[0]?.[0]?.toolInput).toMatchObject({
+      scope: "self",
+      unitId: "A-1203",
+      userId: "resident-1203",
+    });
+  });
+
   it("bloquea consulta de otra unidad y no ejecuta tools", async () => {
     const queryMock = createGatewayMock();
     const adapter = new BuildingOSAdapter({
