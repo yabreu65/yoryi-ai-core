@@ -57,6 +57,7 @@ export type BuildingOSIntentDefinition = {
 };
 
 const ADMIN_ONLY_ROLES = ["SUPER_ADMIN", "TENANT_OWNER", "TENANT_ADMIN", "OPERATOR"];
+const TICKET_READ_ROLES = [...ADMIN_ONLY_ROLES, "RESIDENT"];
 
 export const BUILDINGOS_INTENT_REGISTRY: readonly BuildingOSIntentDefinition[] = [
   {
@@ -144,7 +145,7 @@ export const BUILDINGOS_INTENT_REGISTRY: readonly BuildingOSIntentDefinition[] =
       "Necesito tickets OPEN e IN_PROGRESS",
       "Qué tickets siguen activos",
     ],
-    rolesAllowed: ADMIN_ONLY_ROLES,
+    rolesAllowed: TICKET_READ_ROLES,
     resolverKey: "openTicketsResolver",
     responseType: "list",
     answerSource: "live_data",

@@ -134,6 +134,7 @@ function buildToolInput(
   entities: Record<string, string | undefined>
 ): Record<string, unknown> {
   const toolInput: Record<string, unknown> = {};
+  if (entities.userId) toolInput.userId = entities.userId;
   if (entities.unitId) toolInput.unitId = entities.unitId;
   if (entities.buildingId) toolInput.buildingId = entities.buildingId;
   if (entities.towerId) toolInput.towerId = entities.towerId;
