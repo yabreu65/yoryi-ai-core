@@ -500,6 +500,259 @@ private getAndValidatePendingClarification(
     return process.env.ASSISTANT_INTENT_DEBUG_ENABLED === "true" || context.extra?.intentDebug === true;
   }
 
+  private isResidentContext(context: ResolvedAssistantContext): boolean {
+    return String(context.role ?? "").toUpperCase() === "RESIDENT";
+  }
+
+  private normalizeScopeValue(value: string | undefined): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    const normalized = this.normalizeText(value).replace(/[^a-z0-9]/g, "");
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  private scopeValuesMatch(
+    requested: string | undefined,
+    allowed: string | undefined
+  ): boolean {
+    const requestedScope = this.normalizeScopeValue(requested);
+    const allowedScope = this.normalizeScopeValue(allowed);
+    if (!requestedScope || !allowedScope) {
+      return false;
+    }
+
+    return (
+      requestedScope === allowedScope ||
+      allowedScope.endsWith(requestedScope) ||
+      requestedScope.endsWith(allowedScope)
+    );
+  }
+
+  private hasResidentSelfScopeViolation(
+    question: string,
+    context: ResolvedAssistantContext
+  ): boolean {
+    if (!this.isResidentContext(context)) {
+      return false;
+    }
+
+    const normalized = this.normalizeText(question);
+    const requestedUnitId = this.extractUnitIdFromQuestion(question);
+    const contextUnitId = this.resolveUnitIdFromContext(context);
+    if (
+      requestedUnitId &&
+      contextUnitId &&
+      !this.scopeValuesMatch(requestedUnitId, contextUnitId)
+    ) {
+      return true;
+    }
+
+    if (
+      /\b(otra unidad|otra uf|otro departamento|otro depto|otro apartamento|otro residente|otra persona|vecino|vecina)\b/.test(
+        normalized
+      )
+    ) {
+      return true;
+    }
+
+    const aggregatePatterns = [
+      /\b(top|ranking)\b.*\b(deudor|deudores|moroso|morosos|deuda|mora)\b/,
+      /\b(deuda|mora|morosidad|pagos?|cobranzas?)\b.*\b(por torre|por edificio|del edificio|global|consorcio|todas las unidades|unidades)\b/,
+      /\b(aging|antiguedad|buckets|tramos)\b.*\b(edificio|deuda|mora|morosidad)\b/,
+      /\b(reclamos|tickets)\b.*\b(del edificio|todos|todas|sin asignar|por edificio|global)\b/,
+    ];
+
+    return aggregatePatterns.some((pattern) => pattern.test(normalized));
+  }
+
+  private isResidentForbiddenIntentTool(
+    intent: IntentLibraryIntent,
+    context: ResolvedAssistantContext
+  ): boolean {
+    if (!this.isResidentContext(context)) {
+      return false;
+    }
+
+    const toolName = intent.toolBinding?.toolName;
+    if (!toolName) {
+      return false;
+    }
+
+    return [
+      "analytics_debt_aging",
+      "analytics_debt_by_tower",
+      "get_building_debt_trend",
+    ].includes(toolName);
+  }
+
+  private isExplicitResidentForbiddenToolQuestion(question: string): boolean {
+    const normalized = this.normalizeText(question);
+    return (
+      /\b(aging|antiguedad|buckets|tramos)\b/.test(normalized) ||
+      /\b(analisis|analytics|distribucion)\b.*\b(deuda|mora|morosidad)\b/.test(
+        normalized
+      ) ||
+      /\b(deuda|mora|morosidad)\b.*\b(por torre|por edificio|del edificio|global|consorcio|todas las unidades|unidades)\b/.test(
+        normalized
+      )
+    );
+  }
+
+  private applyResidentSelfScopeToolInput(
+    context: ResolvedAssistantContext,
+    toolInput: Record<string, unknown>
+  ): Record<string, unknown> {
+    if (!this.isResidentContext(context)) {
+      return toolInput;
+    }
+
+    return {
+      ...toolInput,
+      scope: "self",
+      ...(context.userId ? { userId: context.userId } : {}),
+      ...(this.resolveUnitIdFromContext(context)
+        ? { unitId: this.resolveUnitIdFromContext(context) }
+        : {}),
+    };
+  }
+
+  private buildResidentSelfScopeDeniedResponse(
+    context: ResolvedAssistantContext,
+    turnStartedAt: number,
+    options?: {
+      intentCode?: string;
+      resolvedLevel?: AssistantResolvedLevel;
+      intentLibraryMatched?: boolean;
+      intentLibraryConfidence?: number;
+      intentLibraryIntentCode?: string;
+    }
+  ): DataBackedAnswerResult {
+    const intentCode = options?.intentCode ?? "UNKNOWN";
+    return {
+      answer:
+        "No puedo consultar datos de otras unidades/personas ni agregados con rol RESIDENT. Puedo ayudarte con consultas de tu cuenta y tu unidad.",
+      actions: [],
+      metadata: this.buildObservabilityMetadata(context, intentCode, "live_data", {
+        gatewayOutcome: "denied",
+        resolvedLevel: options?.resolvedLevel ?? "FALLBACK",
+        resolvedIntentCode: intentCode,
+        fallbackPath: "blocked_rbac",
+        responseType: "clarification",
+        intentLibraryMatched: options?.intentLibraryMatched,
+        intentLibraryConfidence: options?.intentLibraryConfidence,
+        intentLibraryIntentCode: options?.intentLibraryIntentCode,
+        authorizationDenied: true,
+        latencyMsTotal: Date.now() - turnStartedAt,
+        latencyMsRouting: Date.now() - turnStartedAt,
+      }),
+    };
+  }
+
+  private isTicketQuestion(question: string): boolean {
+    const normalized = this.normalizeText(question);
+    return /\b(ticket|tickets|reclamo|reclamos|incidencia|incidencias|soporte)\b/.test(
+      normalized
+    );
+  }
+
+  private isHumanEscalationRequest(question: string): boolean {
+    const normalized = this.normalizeText(question);
+    const asksHuman =
+      /\b(humano|persona|operador|administracion|administrador|soporte|mesa de ayuda)\b/.test(
+        normalized
+      ) ||
+      /\b(hablar|contactar|derivar|escalar|necesito ayuda)\b/.test(normalized);
+    const operationalRisk =
+      /\b(urgente|emergencia|grave|seguridad|gas|inundacion|fuga|riesgo|peligro|no puedo esperar)\b/.test(
+        normalized
+      );
+
+    return this.isTicketQuestion(question) && asksHuman && operationalRisk;
+  }
+
+  private hasTicketReadPermission(context: ResolvedAssistantContext): boolean {
+    return context.permissions.includes("tickets.read");
+  }
+
+  private requiresTicketBuildingClarification(
+    question: string,
+    context: ResolvedAssistantContext
+  ): boolean {
+    if (!this.isTicketQuestion(question) || this.isResidentContext(context)) {
+      return false;
+    }
+
+    const buildingCount =
+      typeof context.extra?.buildingCount === "number"
+        ? context.extra.buildingCount
+        : 0;
+    return buildingCount > 1 && !this.resolveBuildingIdFromContext(context);
+  }
+
+  private buildTicketBuildingClarification(
+    context: ResolvedAssistantContext,
+    turnStartedAt: number
+  ): DataBackedAnswerResult {
+    return {
+      answer:
+        "Para revisar tickets/reclamos en forma operativa necesito acotar el edificio. Indicame el edificio o torre.",
+      actions: [],
+      metadata: this.buildObservabilityMetadata(context, "GET_OPEN_TICKETS", "live_data", {
+        gatewayOutcome: "missing_entities",
+        resolvedLevel: "P0",
+        resolvedIntentCode: "GET_OPEN_TICKETS",
+        fallbackPath: "aggregate_scope_required",
+        responseType: "clarification",
+        missingEntities: ["buildingId"],
+        p0Routed: true,
+        latencyMsTotal: Date.now() - turnStartedAt,
+        latencyMsRouting: Date.now() - turnStartedAt,
+      }),
+    };
+  }
+
+  private buildTicketsRbacDeniedResponse(
+    context: ResolvedAssistantContext,
+    turnStartedAt: number
+  ): DataBackedAnswerResult {
+    return {
+      answer:
+        "No puedo escalar o consultar reclamos con el rol o permisos actuales.",
+      actions: [],
+      metadata: this.buildObservabilityMetadata(context, "GET_OPEN_TICKETS", "live_data", {
+        gatewayOutcome: "denied",
+        resolvedLevel: "FALLBACK",
+        resolvedIntentCode: "GET_OPEN_TICKETS",
+        fallbackPath: "blocked_rbac",
+        responseType: "clarification",
+        authorizationDenied: true,
+        latencyMsTotal: Date.now() - turnStartedAt,
+        latencyMsRouting: Date.now() - turnStartedAt,
+      }),
+    };
+  }
+
+  private buildHitlGateResponse(
+    context: ResolvedAssistantContext,
+    turnStartedAt: number
+  ): DataBackedAnswerResult {
+    return {
+      answer:
+        "Voy a derivar este caso a una persona del equipo operativo. Mientras tanto, no ejecuto acciones ni cambio datos desde el chat.",
+      actions: [],
+      metadata: this.buildObservabilityMetadata(context, "GET_OPEN_TICKETS", "live_data", {
+        gatewayOutcome: "unavailable",
+        resolvedLevel: "FALLBACK",
+        resolvedIntentCode: "GET_OPEN_TICKETS",
+        fallbackPath: "hitl_created",
+        responseType: "clarification",
+        latencyMsTotal: Date.now() - turnStartedAt,
+        latencyMsRouting: Date.now() - turnStartedAt,
+      }),
+    };
+  }
+
   private resolveBuildingIdFromContext(
     context: ResolvedAssistantContext
   ): string | undefined {
@@ -970,6 +1223,27 @@ private getAndValidatePendingClarification(
       const hasToolBinding = Boolean(intentEntry.toolBinding?.toolName);
 
       if (hasToolBinding) {
+        if (this.isResidentForbiddenIntentTool(intentEntry, context)) {
+          if (!this.isExplicitResidentForbiddenToolQuestion(question)) {
+            return null;
+          }
+
+          const state: IntentLibraryRequestState = {
+            ...sharedState,
+            clarificationAsked: true,
+            missingEntities: [],
+            fallbackPath: "blocked_rbac",
+          };
+          this.setIntentLibraryState(context, state);
+          return this.buildResidentSelfScopeDeniedResponse(context, turnStartedAt, {
+            intentCode: intentEntry.intentCode,
+            resolvedLevel: intentEntry.level,
+            intentLibraryMatched: true,
+            intentLibraryConfidence: match.confidence,
+            intentLibraryIntentCode: intentEntry.intentCode,
+          });
+        }
+
         if (!this.hasIntentLibraryToolPermissions(intentEntry, context)) {
           const state: IntentLibraryRequestState = {
             ...sharedState,
@@ -1487,6 +1761,22 @@ if (execution.status === "success") {
       };
     }
 
+    if (this.hasResidentSelfScopeViolation(question, context)) {
+      return this.buildResidentSelfScopeDeniedResponse(context, turnStartedAt);
+    }
+
+    if (this.requiresTicketBuildingClarification(question, context)) {
+      return this.buildTicketBuildingClarification(context, turnStartedAt);
+    }
+
+    if (this.isHumanEscalationRequest(question)) {
+      if (!this.hasTicketReadPermission(context)) {
+        return this.buildTicketsRbacDeniedResponse(context, turnStartedAt);
+      }
+
+      return this.buildHitlGateResponse(context, turnStartedAt);
+    }
+
     const intentLibraryResult = await this.tryResolveIntentLibrary(
       question,
       context,
@@ -1597,7 +1887,7 @@ if (execution.status === "success") {
           question,
           context,
           toolName: p0Route.toolName as BuildingOSReadOnlyQueryInput["toolName"],
-          toolInput: p0Route.toolInput,
+          toolInput: this.applyResidentSelfScopeToolInput(context, p0Route.toolInput),
         });
 
         if (result) {
@@ -1754,7 +2044,7 @@ if (execution.status === "success") {
             question,
             context,
             toolName: pendingFollowUp.toolName as any,
-            toolInput: pendingFollowUp.toolInput,
+            toolInput: this.applyResidentSelfScopeToolInput(context, pendingFollowUp.toolInput),
           });
           this.pendingClarifications.delete(this.buildClarificationKey(context));
           if (result) {
@@ -1797,7 +2087,7 @@ if (execution.status === "success") {
             question,
             context,
             toolName: p1Route.toolName as any,
-            toolInput: p1Route.toolInput,
+            toolInput: this.applyResidentSelfScopeToolInput(context, p1Route.toolInput),
           });
           if (result) {
             const traceId = generateTraceId();
@@ -1932,7 +2222,7 @@ if (execution.status === "success") {
             question,
             context,
             toolName: p2bRoute.toolName as any,
-            toolInput: p2bRoute.toolInput,
+            toolInput: this.applyResidentSelfScopeToolInput(context, p2bRoute.toolInput),
           });
           if (result) {
             const traceId = generateTraceId();
@@ -1977,7 +2267,7 @@ if (execution.status === "success") {
             question,
             context,
             toolName: p2Route.toolName as any,
-            toolInput: p2Route.toolInput,
+            toolInput: this.applyResidentSelfScopeToolInput(context, p2Route.toolInput),
           });
           if (result) {
             const traceId = generateTraceId();
@@ -2136,10 +2426,10 @@ if (execution.status === "success") {
   private extractUnitIdFromQuestion(question: string): string | undefined {
     const normalized = this.normalizeText(question);
     const unitPatterns = [
-      /(?:la\s+)?unidad\s+(\d+)/i,
-      /(?:el\s+)?departamento\s+(\d+)/i,
-      /unit\s+(\d+)/i,
-      /dept[o\.]?\s*(\d+)/i,
+      /(?:la\s+)?unidad\s+([a-z0-9-]+)/i,
+      /(?:el\s+)?departamento\s+([a-z0-9-]+)/i,
+      /unit\s+([a-z0-9-]+)/i,
+      /dept[o\.]?\s*([a-z0-9-]+)/i,
     ];
 
     for (const pattern of unitPatterns) {
