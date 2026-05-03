@@ -14,7 +14,7 @@
     {
       "intentCode": "GET_OVERDUE_UNITS",
       "toolName": "search_payments",
-      "keywords": ["moroso", "morosos", "mora", "deuda", "vencida", "expensas", "impagas"],
+      "keywords": ["moroso", "morosos", "morosas", "morosa", "mora", "deuda", "vencida", "expensas", "impagas", "unidades morosas"],
       "toolInput": {
         "status": ["OVERDUE"]
       }
@@ -65,7 +65,7 @@
     {
       "intentCode": "GET_DEBT_BY_TOWER",
       "toolName": "analytics_debt_by_tower",
-      "keywords": ["deuda por torre", "deuda por edificio", "porcentaje cobrabilidad", "cobranza por edificio"],
+      "keywords": ["deuda por torre", "deuda por edificio", "porcentaje cobrabilidad", "cobranza por edificio", "ranking de deuda por torre", "ranking por torre", "top torres", "top edificios"],
       "toolInput": {
         "asOf": "{today}"
       }
@@ -73,7 +73,7 @@
     {
       "intentCode": "GET_UNIT_DEBT",
       "toolName": "get_unit_balance",
-      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad"],
+      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad", "saldo pendiente", "adeuda", "adeudada", "adeudadas", "expensas adeudadas", "al dia", "al día", "debe la unidad"],
       "toolInput": {
         "debtStatus": "OVERDUE"
       }
@@ -81,7 +81,7 @@
     {
       "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
       "toolName": "get_unit_balance_by_period",
-      "keywords": ["historial", "evolución", "serie histórica", "deuda por período"],
+      "keywords": ["historial", "evolución", "serie histórica", "deuda por período", "saldo por período", "saldo por periodo", "balance por período", "balance por periodo"],
       "toolInput": {
         "periodsBack": 3,
         "includeCurrent": false,
@@ -107,7 +107,7 @@
     {
       "intentCode": "GET_URGENT_UNASSIGNED_TICKETS",
       "toolName": "search_tickets",
-      "keywords": ["urgente sin asignar", "urgentes pendientes", "alta prioridad sin asignar", "priority high unassigned"],
+      "keywords": ["urgente sin asignar", "urgentes pendientes", "alta prioridad sin asignar", "urgente", "prioridad alta"],
       "toolInput": {
         "priority": ["HIGH"],
         "assigned": false,

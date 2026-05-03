@@ -99,6 +99,9 @@ class ChatIntentRouter {
         if (this.isHowToMutationQuestion(normalized)) {
             return false;
         }
+        if (this.isReadOnlyPendingPaymentsQuery(normalized)) {
+            return false;
+        }
         const mutationPatterns = [
             /\b(aprueba|aprobar|aproba|approve|accept)\b/,
             /\b(rechaza|rechazar|reject)\b/,
@@ -124,6 +127,12 @@ class ChatIntentRouter {
             /\bpasos\s+para\s+(crear|aprobar|rechazar|editar|modificar|actualizar|eliminar|borrar|asignar|publicar|enviar|subir|cargar|reportar)\b/,
         ];
         return howToPatterns.some((pattern) => pattern.test(normalizedQuestion));
+    }
+    isReadOnlyPendingPaymentsQuery(normalized) {
+        const hasQueryPattern = /\b(cuantos?|hay|mostrame|listar)\b/i.test(normalized);
+        const hasPendingPayments = /pendiente|siniaprobar|sinrev|revis/i.test(normalized);
+        const hasPaymentRef = /\bpago|pagos\b/i.test(normalized);
+        return hasQueryPattern && hasPendingPayments && hasPaymentRef;
     }
     isAmbiguousRequest(question, currentModule, hasRecentModuleContext) {
         const normalized = this.normalizeText(question);

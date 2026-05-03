@@ -1,0 +1,423 @@
+{
+  "version": "2026-04-intent-level-registry-v1",
+  "notes": "Canonical Intent -> P-level registry consolidated from manifests. Level precedence when repeated: P0 > P1 > P2B > P2A > P3.",
+  "intents": [
+    {
+      "intentCode": "COLLECTION_EFFICIENCY",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "templates",
+      "manifestLevels": [
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "DEBT_AGING_BY_BUILDING",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "templates",
+      "manifestLevels": [
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "EXECUTIVE_DASHBOARD",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "templates",
+      "manifestLevels": [
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "GET_12MONTH_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_APPROVED_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A",
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "GET_BUILDING_DEBT_TOTAL",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0"
+      ]
+    },
+    {
+      "intentCode": "GET_BUILDING_OVERDUE_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_BUILDING_TREND_LAST_YEAR",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_COLLECTIONS_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A",
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "GET_COLLECTION_RATE_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_HIGH_PRIORITY_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_OPEN_TICKETS",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0",
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_OVERDUE_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0",
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0",
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_PENDING_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_PROCESSES_BY_PERIOD",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_PROCESS_SUMMARY",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_REJECTED_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_UNASSIGNED_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_CHARGED_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0",
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_OVERDUE_TREND",
+      "level": "P2A",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2A"
+      ]
+    },
+    {
+      "intentCode": "GET_UNIT_PRIMARY_RESIDENT",
+      "level": "P0",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P0",
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "GET_URGENT_UNASSIGNED_TICKETS",
+      "level": "P1",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P1"
+      ]
+    },
+    {
+      "intentCode": "PENDING_ACTIONS",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "templates",
+      "manifestLevels": [
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "SEARCH_CLAIMS",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "SEARCH_EXPENSE_VALIDATIONS",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "SEARCH_LIQUIDATIONS",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "SEARCH_PROCESSES",
+      "level": "P2B",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P2B"
+      ]
+    },
+    {
+      "intentCode": "UNIT_DEBT_OCCUPANCY",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "templates",
+      "manifestLevels": [
+        "P3"
+      ]
+    },
+    {
+      "intentCode": "UNIT_DEBT_TREND",
+      "level": "P3",
+      "audience": "ADMIN",
+      "readOnly": true,
+      "sourceType": "live_data",
+      "manifestLevels": [
+        "P3"
+      ]
+    }
+  ]
+}

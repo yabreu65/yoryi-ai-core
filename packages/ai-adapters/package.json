@@ -16,14 +16,15 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp -r src/buildingos/contracts/manifests dist/buildingos/contracts/ && cp -r src/buildingos/intent-library dist/buildingos/ && echo 'Manifests and intent-library copied'",
     "dev": "tsc -w -p tsconfig.json",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@yoryi/ai-types": "*"
+    "@yoryi/ai-types": "*",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

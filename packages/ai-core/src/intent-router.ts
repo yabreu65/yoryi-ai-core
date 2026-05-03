@@ -59,6 +59,7 @@ const DOMAIN_KEYWORDS = [
   "clientes",
   "cobranza",
   "cobranzas",
+  "debo",
   "comunicado",
   "comunicados",
   "communications",
@@ -120,6 +121,10 @@ export class ChatIntentRouter {
       return false;
     }
 
+    if (this.isReadOnlyPendingPaymentsQuery(normalized)) {
+      return false;
+    }
+
     const mutationPatterns = [
       /\b(aprueba|aprobar|aproba|approve|accept)\b/,
       /\b(rechaza|rechazar|reject)\b/,
@@ -148,6 +153,13 @@ export class ChatIntentRouter {
     ];
 
     return howToPatterns.some((pattern) => pattern.test(normalizedQuestion));
+  }
+
+  private isReadOnlyPendingPaymentsQuery(normalized: string): boolean {
+    const hasQueryPattern = /\b(cuantos?|hay|mostrame|listar)\b/i.test(normalized);
+    const hasPendingPayments = /pendiente|siniaprobar|sinrev|revis/i.test(normalized);
+    const hasPaymentRef = /\bpago|pagos\b/i.test(normalized);
+    return hasQueryPattern && hasPendingPayments && hasPaymentRef;
   }
 
   private isAmbiguousRequest(

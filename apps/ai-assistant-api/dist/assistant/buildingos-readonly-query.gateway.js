@@ -1,6 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpBuildingOSReadOnlyQueryGateway = void 0;
+const RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+const RESPONSE_SCHEMA_VERSION_V2 = "2026-05-p2-response-v2";
+const P2_TOOL_ALLOWLIST = new Set([
+    "get_unit_debt_trend",
+    "get_building_debt_trend",
+    "get_collections_trend",
+]);
 class HttpBuildingOSReadOnlyQueryGateway {
     baseUrl;
     timeoutMs;
@@ -26,10 +33,22 @@ class HttpBuildingOSReadOnlyQueryGateway {
         if (Date.now() < this.openUntilTs) {
             return null;
         }
-        const url = new URL(this.endpointPath, this.baseUrl);
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
         try {
+            const endpointPath = input.toolName
+                ? `/assistant/tools/${input.toolName}`
+                : this.endpointPath;
+            const url = new URL(endpointPath, this.baseUrl);
+            const headers = this.buildHeadersForContext(input.context);
+            console.log("[GATEWAY] Sending request to:", url.toString());
+            console.log("[GATEWAY] Headers:", JSON.stringify(headers));
+            console.log("[GATEWAY] Body context:", JSON.stringify({
+                tenantId: input.context.tenantId,
+                userId: input.context.userId,
+                role: input.context.role,
+                toolName: input.toolName,
+            }));
             const response = await fetch(url.toString(), {
                 method: "POST",
                 headers: this.buildHeadersForContext(input.context),
@@ -37,6 +56,8 @@ class HttpBuildingOSReadOnlyQueryGateway {
                     intentCode: input.intentCode,
                     contractVersion: "2026-04-readonly-v1",
                     question: input.question,
+                    responseContractVersion: RESPONSE_SCHEMA_VERSION,
+                    toolInput: input.toolInput,
                     context: {
                         appId: input.context.appId,
                         tenantId: input.context.tenantId,
@@ -50,12 +71,15 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 signal: controller.signal,
             });
             if (!response.ok) {
+                console.log("[GATEWAY] HTTP error:", response.status, response.statusText);
                 this.registerFailure();
                 return null;
             }
             const payload = (await response.json());
+            console.log("[GATEWAY] Raw response:", JSON.stringify(payload).substring(0, 200));
             const parsed = this.parseGatewayResponse(payload);
             if (!parsed) {
+                console.log("[GATEWAY] Parse failed, payload type:", typeof payload);
                 this.registerFailure();
                 return null;
             }
@@ -65,12 +89,16 @@ class HttpBuildingOSReadOnlyQueryGateway {
                 intent: input.intentCode,
                 intentCode: input.intentCode,
                 answerSource: "live_data",
+                toolName: input.toolName,
             };
             if (parsed.responseType) {
                 metadata.responseType = parsed.responseType;
             }
             if (parsed.dataScope) {
                 metadata.dataScope = parsed.dataScope;
+            }
+            if (parsed.contractVersion) {
+                metadata.contractVersion = parsed.contractVersion;
             }
             return {
                 answer: parsed.answer,
@@ -109,6 +137,17 @@ class HttpBuildingOSReadOnlyQueryGateway {
         if (!this.isRecord(payload)) {
             return null;
         }
+        if (this.isSchemaPayload(payload)) {
+            return {
+                contractVersion: payload.contractVersion,
+                answer: payload.answer,
+                answerSource: payload.answerSource === "live_data" ? "live_data" : undefined,
+                responseType: this.normalizeResponseType(payload.responseType),
+                dataScope: payload.dataScope,
+                actions: payload.actions,
+                metadata: payload.metadata,
+            };
+        }
         const answer = this.asNonEmptyString(payload.answer);
         if (!answer) {
             return null;
@@ -123,7 +162,7 @@ class HttpBuildingOSReadOnlyQueryGateway {
         const actions = this.parseActions(payload.actions);
         const metadata = this.parseMetadata(payload.metadata);
         if (responseType) {
-            response.responseType = responseType;
+            response.responseType = this.normalizeResponseType(responseType);
         }
         if (dataScope) {
             response.dataScope = dataScope;
@@ -183,8 +222,44 @@ class HttpBuildingOSReadOnlyQueryGateway {
         const trimmed = value.trim();
         return trimmed.length > 0 ? trimmed : null;
     }
+    normalizeResponseType(value) {
+        const normalized = this.asNonEmptyString(value)?.toLowerCase();
+        if (!normalized) {
+            return undefined;
+        }
+        if (normalized === "metric") {
+            return "exact";
+        }
+        if (normalized === "no_data") {
+            return "clarification";
+        }
+        if (normalized === "exact" ||
+            normalized === "summary" ||
+            normalized === "list" ||
+            normalized === "clarification") {
+            return normalized;
+        }
+        return undefined;
+    }
     isRecord(value) {
         return typeof value === "object" && value !== null && !Array.isArray(value);
+    }
+    isSchemaPayload(value) {
+        if (!this.isRecord(value)) {
+            return false;
+        }
+        const answer = this.asNonEmptyString(value.answer);
+        const contractVersion = this.asNonEmptyString(value.contractVersion);
+        const answerSource = this.asNonEmptyString(value.answerSource);
+        const responseType = this.asNonEmptyString(value.responseType);
+        const dataScope = this.asNonEmptyString(value.dataScope);
+        return Boolean(answer &&
+            contractVersion &&
+            (answerSource === "live_data" || answerSource === "fallback") &&
+            responseType &&
+            dataScope &&
+            Array.isArray(value.actions) &&
+            this.isRecord(value.metadata));
     }
     registerSuccess() {
         this.consecutiveFailures = 0;

@@ -78,7 +78,7 @@ let AssistantService = class AssistantService {
         });
         const readOnlyQueryGateway = new buildingos_readonly_query_gateway_1.HttpBuildingOSReadOnlyQueryGateway({
             baseUrl: process.env.BUILDINGOS_READONLY_QUERY_API_BASE_URL,
-            timeoutMs: this.parsePositiveInt(process.env.BUILDINGOS_READONLY_QUERY_TIMEOUT_MS, 900),
+            timeoutMs: this.parsePositiveInt(process.env.BUILDINGOS_READONLY_QUERY_TIMEOUT_MS, 30_000),
             apiKey: process.env.BUILDINGOS_READONLY_QUERY_API_KEY,
             circuitBreakerFailureThreshold: this.parsePositiveInt(process.env.BUILDINGOS_GATEWAY_CB_FAILURE_THRESHOLD, 3),
             circuitBreakerOpenMs: this.parsePositiveInt(process.env.BUILDINGOS_GATEWAY_CB_OPEN_MS, 30_000),
@@ -90,6 +90,15 @@ let AssistantService = class AssistantService {
         const jurismanagerAdapter = new ai_adapters_1.JurisManagerAdapter();
         this.adaptersByApp.set(buildingosAdapter.appId, buildingosAdapter);
         this.adaptersByApp.set(jurismanagerAdapter.appId, jurismanagerAdapter);
+        console.log("[GATEWAY] BUILDINGOS ReadOnly:", {
+            baseUrl: process.env.BUILDINGOS_READONLY_QUERY_API_BASE_URL ? "SET" : "UNDEFINED",
+            timeout: process.env.BUILDINGOS_READONLY_QUERY_TIMEOUT_MS || "default 30000",
+            hasApiKey: !!process.env.BUILDINGOS_READONLY_QUERY_API_KEY,
+        });
+        console.log("[GATEWAY] BUILDINGOS Financial:", {
+            baseUrl: process.env.BUILDINGOS_FINANCIAL_API_BASE_URL ? "SET" : "UNDEFINED",
+            hasApiKey: !!process.env.BUILDINGOS_FINANCIAL_API_KEY,
+        });
         const knowledgeBasePath = (0, node_path_1.join)(__dirname, "..", "..", "..", "..", "knowledge");
         const llmProvider = LLM_ENABLED
             ? new ai_core_1.OllamaLlmProvider({ baseUrl: LLM_BASE_URL, model: LLM_MODEL })
@@ -119,12 +128,13 @@ let AssistantService = class AssistantService {
         this.assertRolloutAccess(context);
         this.assertRateLimit(context, "chat");
         const chatService = this.resolveChatService(context.appId);
-        return chatService.handle({
+        const response = await chatService.handle({
             message: request.message,
             context,
             useLlm: request.useLlm ?? LLM_ENABLED,
             sessionId: request.sessionId,
         });
+        return this.normalizeResponseContract(response);
     }
     async executeAction(request) {
         const context = this.buildServerAuthoritativeContext(request.context, request.authContext);
@@ -218,6 +228,35 @@ let AssistantService = class AssistantService {
         }
         const queryExecutor = this.createPostgresQueryExecutor(this.ragRuntimeConfig.dbUrl);
         return new ai_rag_1.PostgresRagStore(queryExecutor);
+    }
+    normalizeResponseContract(response) {
+        const normalizedType = this.normalizeResponseTypeAlias(response.responseType);
+        if (!normalizedType) {
+            return response;
+        }
+        return {
+            ...response,
+            responseType: normalizedType,
+        };
+    }
+    normalizeResponseTypeAlias(responseType) {
+        if (!responseType) {
+            return undefined;
+        }
+        const normalized = responseType.toLowerCase();
+        if (normalized === "metric") {
+            return "exact";
+        }
+        if (normalized === "no_data") {
+            return "clarification";
+        }
+        if (normalized === "exact" ||
+            normalized === "summary" ||
+            normalized === "list" ||
+            normalized === "clarification") {
+            return normalized;
+        }
+        return undefined;
     }
     createPostgresQueryExecutor(dbUrl) {
         let poolPromise = null;

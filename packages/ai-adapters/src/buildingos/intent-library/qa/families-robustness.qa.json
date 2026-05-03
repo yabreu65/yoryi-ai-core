@@ -1,0 +1,26 @@
+[
+  {
+    "id": "FAM-ROB-001",
+    "question": "ranking de unidades mas deudoras por monto",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TOP_N"
+  },
+  {
+    "id": "FAM-ROB-002",
+    "question": "desglose por torre de deuda vencida",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "BREAKDOWN"
+  },
+  {
+    "id": "FAM-ROB-003",
+    "question": "mostrar saldo total adeudado del consorcio",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TOTAL"
+  },
+  {
+    "id": "FAM-ROB-004",
+    "question": "tendencia de morosidad del edificio ultimos meses",
+    "role": "TENANT_ADMIN",
+    "expectedFamily": "TREND"
+  }
+]

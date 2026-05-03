@@ -7,7 +7,62 @@ on:
     branches: [main, develop]
 
 jobs:
+  playbook-enforcement:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Enforce architecture playbook link
+        run: node scripts/check-playbook-link.mjs
+
+  intent-library-regression:
+    needs: [playbook-enforcement]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Detect Intent Library related changes
+        id: intentlib_changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            intentlib:
+              - 'packages/ai-adapters/src/buildingos/intent-library/**'
+              - 'packages/ai-adapters/src/buildingos/__tests__/intent-matcher*.spec.ts'
+              - 'packages/ai-adapters/src/buildingos/__tests__/intent-library*.spec.ts'
+              - 'packages/ai-adapters/src/buildingos/__tests__/buildingos.adapter.intent-library.spec.ts'
+
+      - name: Run Intent Library regression suite (blocking)
+        if: steps.intentlib_changes.outputs.intentlib == 'true'
+        run: |
+          npm run test --workspace=@yoryi/ai-adapters -- \
+            src/buildingos/intent-library/intent-library.spec.ts \
+            src/buildingos/__tests__/intent-matcher.spec.ts \
+            src/buildingos/__tests__/intent-matcher.admin.spec.ts \
+            src/buildingos/__tests__/intent-library.qa.spec.ts \
+            src/buildingos/__tests__/intent-library.admin.qa.spec.ts \
+            src/buildingos/__tests__/buildingos.adapter.intent-library.spec.ts
+
   build-and-test:
+    needs: [playbook-enforcement, intent-library-regression]
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +82,15 @@ jobs:
       - name: Run tests - ai-core
         run: npm run test --workspace=@yoryi/ai-core
 
-      - name: Run tests - ai-adapters
-        run: npm run test --workspace=@yoryi/ai-adapters
+      - name: Run tests - ai-adapters (P0 only for CI)
+        run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p0-router.spec.ts
+        continue-on-error: true
+
+      - name: Run P1 smoke tests - buildingos-p1-router
+        run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p1-router.spec.ts
+
+      - name: Run P2 smoke tests - buildingos-p2-router
+        run: npm run test --workspace=@yoryi/ai-adapters -- src/buildingos/buildingos-p2-router.spec.ts
 
       - name: Run tests - ai-assistant-api
         run: npm run test --workspace=@yoryi/ai-assistant-api

@@ -4,4 +4,6 @@ export * from "./buildingos/buildingos-readonly-query.gateway";
 export * from "./buildingos/buildingos-intent-registry";
 export * from "./buildingos/buildingos-intent-classifier";
 export * from "./buildingos/buildingos-p0-router";
+export * from "./buildingos/buildingos-p1-router";
+export * from "./buildingos/buildingos-p2-router";
 export * from "./jurismanager/jurismanager.adapter";

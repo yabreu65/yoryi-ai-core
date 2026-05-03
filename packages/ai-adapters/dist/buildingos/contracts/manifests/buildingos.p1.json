@@ -1,0 +1,118 @@
+{
+  "contractVersion": "2026-04-buildingos-p1-manifest-v1",
+  "defaults": {
+    "debtStatus": "OVERDUE",
+    "ranking": 5,
+    "requireBuildingWhenMultiBuilding": true,
+    "maxClarifications": 2,
+    "periodsBack": 3,
+    "maxPeriodsBack": 12,
+    "includeCurrent": false,
+    "debtBuckets": ["current", "1_30", "31_60", "61_90", "90_plus"]
+  },
+  "routes": [
+    {
+      "intentCode": "GET_OVERDUE_UNITS",
+      "toolName": "search_payments",
+      "keywords": ["moroso", "morosos", "morosas", "morosa", "mora", "deuda", "vencida", "expensas", "impagas", "unidades morosas"],
+      "toolInput": {
+        "status": ["OVERDUE"]
+      }
+    },
+    {
+      "intentCode": "GET_REJECTED_TODAY",
+      "toolName": "search_payments",
+      "keywords": ["rechazado", "rechazados", "hoy", "hoy rechazados", "pago rechazado"],
+      "toolInput": {
+        "status": ["REJECTED"],
+        "paidAtFrom": "{today}",
+        "paidAtTo": "{today}"
+      }
+    },
+    {
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "toolName": "search_payments",
+      "keywords": ["sin comprobante", "sin receipt", "sin recibo", "sin evidencia"],
+      "toolInput": {
+        "hasProof": false
+      }
+    },
+    {
+      "intentCode": "GET_LAST_PAYMENT",
+      "toolName": "get_unit_payments",
+      "keywords": ["ultimo pago", "último pago", "último recibo", "último comprobante"],
+      "toolInput": {
+        "ranking": 1,
+        "orderBy": "paidAt"
+      }
+    },
+    {
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "toolName": "search_payments",
+      "keywords": ["pagos pendientes", "por aprobar", "submitted", "sin revisar", "pendientes"],
+      "toolInput": {
+        "status": ["SUBMITTED"]
+      }
+    },
+    {
+      "intentCode": "GET_DEBT_AGING",
+      "toolName": "analytics_debt_aging",
+      "keywords": ["antigüedad", "aging", "mora", "días de mora", "vencimiento"],
+      "toolInput": {
+        "asOf": "{today}"
+      }
+    },
+    {
+      "intentCode": "GET_DEBT_BY_TOWER",
+      "toolName": "analytics_debt_by_tower",
+      "keywords": ["deuda por torre", "deuda por edificio", "porcentaje cobrabilidad", "cobranza por edificio", "ranking de deuda por torre", "ranking por torre", "top torres", "top edificios"],
+      "toolInput": {
+        "asOf": "{today}"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_DEBT",
+      "toolName": "get_unit_balance",
+      "keywords": ["cuanto debe", "cuánto debe", "deuda de la unidad", "saldo de la unidad"],
+      "toolInput": {
+        "debtStatus": "OVERDUE"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "toolName": "get_unit_balance_by_period",
+      "keywords": ["historial", "evolución", "serie histórica", "deuda por período", "saldo por período", "saldo por periodo", "balance por período", "balance por periodo"],
+      "toolInput": {
+        "periodsBack": 3,
+        "includeCurrent": false,
+        "debtStatus": "OVERDUE"
+      }
+    },
+    {
+      "intentCode": "GET_UNIT_PRIMARY_RESIDENT",
+      "toolName": "get_unit_profile",
+      "keywords": ["residente", "quien vive", "quién vive", "nombre del residente", "ocupante"],
+      "toolInput": {
+        "fields": ["occupants", "primaryResident", "building", "unit"]
+      }
+    },
+    {
+      "intentCode": "GET_OPEN_TICKETS",
+      "toolName": "search_tickets",
+      "keywords": ["tickets", "reclamos", "incidencias", "abiertos", "en progreso", "backlog"],
+      "toolInput": {
+        "status": ["OPEN", "IN_PROGRESS"]
+      }
+    },
+    {
+      "intentCode": "GET_URGENT_UNASSIGNED_TICKETS",
+      "toolName": "search_tickets",
+      "keywords": ["urgente sin asignar", "urgentes pendientes", "alta prioridad sin asignar", "urgente", "prioridad alta"],
+      "toolInput": {
+        "priority": ["HIGH"],
+        "assigned": false,
+        "status": ["OPEN"]
+      }
+    }
+  ]
+}

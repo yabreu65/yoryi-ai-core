@@ -1,0 +1,1342 @@
+[
+  {
+    "id": "PAY-RES-001",
+    "question": "cuanto debo hoy en mi unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-002",
+    "question": "necesito saber mi deuda total actual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-003",
+    "question": "decime el saldo pendiente de expensas ahora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-004",
+    "question": "mi departamento tiene deuda hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-005",
+    "question": "quiero confirmar si estoy al dia con pagos",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-006",
+    "question": "mostrame la deuda vigente de mi cuenta",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-007",
+    "question": "saldo total adeudado al momento",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-008",
+    "question": "tengo pagos pendientes por confirmar",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-009",
+    "question": "lista de pagos pendientes de acreditacion",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-010",
+    "question": "que pagos siguen en revision",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-011",
+    "question": "pagos enviados todavia no aprobados",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-012",
+    "question": "mostrar transferencias pendientes",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-013",
+    "question": "que medios de pago tengo habilitados hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-014",
+    "question": "necesito revisar pendientes de pago y canal de pago",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PENDING_PAYMENTS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-015",
+    "question": "tengo deuda vencida en mi unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-016",
+    "question": "mi cuenta entro en mora",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-017",
+    "question": "hay montos vencidos para pagar",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-018",
+    "question": "mostrar deuda expirada del periodo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-019",
+    "question": "quiero saber si tengo vencimientos atrasados",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-020",
+    "question": "consulta de deuda en mora residente",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-021",
+    "question": "saldo vencido de expensas actuales",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-022",
+    "question": "subi pago pero sin comprobante",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-023",
+    "question": "pagos que no tienen recibo cargado",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-024",
+    "question": "faltan comprobantes en mis pagos",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-025",
+    "question": "estado de pagos sin evidencia",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-026",
+    "question": "transferencias sin adjunto de respaldo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-027",
+    "question": "quiero ver pagos sin ticket de comprobacion",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-028",
+    "question": "pagos enviados sin foto de comprobante",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_PAYMENTS_WITHOUT_PROOF",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-029",
+    "question": "hoy me rechazaron un pago",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-030",
+    "question": "pagos rechazados en el dia",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-031",
+    "question": "estado rechazo de transferencia reciente",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-032",
+    "question": "quiero saber si hubo pagos rechazados hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-033",
+    "question": "rechazos de pago de esta jornada",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-034",
+    "question": "comprobantes observados y rechazados hoy",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-035",
+    "question": "alerta de pagos denegados recientes",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_REJECTED_TODAY",
+      "level": "P0",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-036",
+    "question": "cual fue mi ultimo pago registrado",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-037",
+    "question": "mostrar ultimo comprobante acreditado",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-038",
+    "question": "cuando impacto mi ultimo pago",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-039",
+    "question": "detalle del pago mas reciente",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-040",
+    "question": "necesito ver fecha del ultimo cobro aplicado",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-041",
+    "question": "monto del ultimo pago confirmado",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-042",
+    "question": "ultimo recibo validado de expensas",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_LAST_PAYMENT",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_payments",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-043",
+    "question": "estado de cuenta del periodo actual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-044",
+    "question": "saldo por periodo de mi unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-045",
+    "question": "resumen mensual de cargos y pagos",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-046",
+    "question": "cuenta corriente por mes",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-047",
+    "question": "balance de expensas por periodo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-048",
+    "question": "quiero estado de cuenta de abril",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-049",
+    "question": "historial de saldos por periodo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-050",
+    "question": "que pasa si pago tarde la expensa",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-051",
+    "question": "como se calcula mora por atraso",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-052",
+    "question": "dias de mora de mi deuda actual",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-053",
+    "question": "impacto de pagar fuera de termino",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-054",
+    "question": "penalidad por atraso en expensas",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-055",
+    "question": "antiguedad de deuda vencida por tramos",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-056",
+    "question": "recargos por demora en pagos",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-057",
+    "question": "evolucion de mi deuda en los ultimos meses",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-058",
+    "question": "tendencia de saldo adeudado por unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-059",
+    "question": "deuda historica mensual de mi departamento",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-060",
+    "question": "como viene cambiando mi deuda",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-061",
+    "question": "serie temporal de deuda residente",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-062",
+    "question": "deuda comparada mes a mes",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-063",
+    "question": "trayectoria de deuda en el ultimo semestre",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-064",
+    "question": "historial de pagos aplicados de mi unidad",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-065",
+    "question": "tendencia de cobranzas ya pagadas",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-066",
+    "question": "evolucion de montos que fui pagando",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-067",
+    "question": "pagos acreditados por mes historico",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-068",
+    "question": "como se distribuyeron mis pagos en el tiempo",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-069",
+    "question": "serie de pagos confirmados mensuales",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-070",
+    "question": "progreso de pagos realizados en el ano",
+    "expected": {
+      "matchType": "answer",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.85,
+      "missingEntities": [],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_tool_success"
+    }
+  },
+  {
+    "id": "PAY-RES-071",
+    "question": "cuanto debo hoy en mi unidad",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-072",
+    "question": "necesito saber mi deuda total actual",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-073",
+    "question": "decime el saldo pendiente de expensas ahora",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-074",
+    "question": "quiero confirmar si estoy al dia con pagos",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "get_unit_balance",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-075",
+    "question": "tengo deuda vencida en mi unidad",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-076",
+    "question": "mi cuenta entro en mora",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-077",
+    "question": "hay montos vencidos para pagar",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-078",
+    "question": "mostrar deuda expirada del periodo",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "unitId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-079",
+    "question": "tengo deuda vencida en mi unidad A-1203",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-080",
+    "question": "mi cuenta entro en mora unidad A-1203",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-081",
+    "question": "deuda atrasada con interes aplicado unidad A-1203",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-082",
+    "question": "pendientes vencidos de mi departamento A-1203",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_OVERDUE_UNITS",
+      "level": "P0",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "buildingId"
+      ],
+      "toolName": "search_payments",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-083",
+    "question": "saldo por periodo de mi unidad",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-084",
+    "question": "resumen mensual de cargos y pagos",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-085",
+    "question": "cuenta corriente por mes",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_BALANCE_BY_PERIOD",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_unit_balance_by_period",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-086",
+    "question": "como se calcula mora por atraso",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-087",
+    "question": "penalidad por atraso en expensas",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_DEBT_AGING",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "analytics_debt_aging",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-088",
+    "question": "deuda comparada mes a mes",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-089",
+    "question": "serie temporal de deuda residente",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_DEBT_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_unit_debt_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-090",
+    "question": "serie de pagos confirmados mensuales",
+    "expected": {
+      "matchType": "clarification",
+      "intentCode": "GET_UNIT_COLLECTED_TREND",
+      "level": "P1",
+      "minConfidence": 0.7,
+      "missingEntities": [
+        "period"
+      ],
+      "toolName": "get_collections_trend",
+      "fallbackPath": "intent_library_clarification"
+    }
+  },
+  {
+    "id": "PAY-RES-091",
+    "question": "como esta el clima en buenos aires hoy",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-092",
+    "question": "quien gano el partido de river ayer",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-093",
+    "question": "recomendame una receta de pasta facil",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-094",
+    "question": "quiero reservar un vuelo a madrid",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-095",
+    "question": "cual es la capital de noruega",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-096",
+    "question": "contame un chiste corto",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-097",
+    "question": "como instalar docker en mac",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-098",
+    "question": "explicame la teoria de la relatividad",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-099",
+    "question": "dame noticias de tecnologia de hoy",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  },
+  {
+    "id": "PAY-RES-100",
+    "question": "que peliculas me recomendas para el fin de semana",
+    "expected": {
+      "matchType": "no_match",
+      "intentCode": null,
+      "level": null,
+      "minConfidence": null,
+      "missingEntities": [],
+      "toolName": null,
+      "fallbackPath": "intent_library_no_match"
+    }
+  }
+]

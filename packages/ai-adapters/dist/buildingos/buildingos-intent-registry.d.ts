@@ -1,11 +1,11 @@
-export type BuildingOSCanonicalIntentCode = "GET_OVERDUE_UNITS" | "GET_PENDING_PAYMENTS" | "GET_OPEN_TICKETS" | "GET_VACANT_UNITS" | "GET_COLLECTIONS_SUMMARY" | "GET_UNIT_DEBT";
-export type BuildingOSLegacyIntentAlias = "admin_arrears_by_building" | "admin_pending_payments_month" | "admin_open_tickets_by_building" | "admin_vacant_units" | "admin_collections_summary_month" | "admin_unit_debt";
+export type BuildingOSCanonicalIntentCode = "GET_OVERDUE_UNITS" | "GET_PENDING_PAYMENTS" | "GET_OPEN_TICKETS" | "GET_VACANT_UNITS" | "GET_COLLECTIONS_SUMMARY" | "GET_UNIT_DEBT" | "GET_UNIT_PRIMARY_RESIDENT" | "GET_REJECTED_TODAY" | "GET_PAYMENTS_WITHOUT_PROOF" | "GET_LAST_PAYMENT" | "GET_DEBT_AGING" | "GET_DEBT_BY_TOWER" | "GET_UNIT_BALANCE_BY_PERIOD" | "GET_URGENT_UNASSIGNED_TICKETS";
+export type BuildingOSLegacyIntentAlias = "admin_arrears_by_building" | "admin_pending_payments_month" | "admin_open_tickets_by_building" | "admin_vacant_units" | "admin_collections_summary_month" | "admin_unit_debt" | "admin_unit_primary_resident";
 export type BuildingOSReadOnlyResponseType = "list" | "summary" | "exact";
 export type BuildingOSIntentDefinition = {
     code: BuildingOSCanonicalIntentCode;
     examples: string[];
     rolesAllowed: string[];
-    resolverKey: "overdueUnitsResolver" | "pendingPaymentsResolver" | "openTicketsResolver" | "vacantUnitsResolver" | "collectionsSummaryResolver" | "unitDebtResolver";
+    resolverKey: "overdueUnitsResolver" | "pendingPaymentsResolver" | "openTicketsResolver" | "vacantUnitsResolver" | "collectionsSummaryResolver" | "unitDebtResolver" | "unitPrimaryResidentResolver" | "rejectedTodayResolver" | "paymentsWithoutProofResolver" | "lastPaymentResolver" | "debtAgingResolver" | "debtByTowerResolver" | "unitBalanceByPeriodResolver" | "urgentUnassignedTicketsResolver";
     responseType: BuildingOSReadOnlyResponseType;
     answerSource: "live_data";
     classifierHints: string[];

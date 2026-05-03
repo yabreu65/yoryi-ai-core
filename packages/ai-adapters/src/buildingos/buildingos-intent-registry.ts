@@ -5,7 +5,20 @@ export type BuildingOSCanonicalIntentCode =
   | "GET_VACANT_UNITS"
   | "GET_COLLECTIONS_SUMMARY"
   | "GET_UNIT_DEBT"
-  | "GET_UNIT_PRIMARY_RESIDENT";
+  | "GET_UNIT_PRIMARY_RESIDENT"
+  | "GET_REJECTED_TODAY"
+  | "GET_PAYMENTS_WITHOUT_PROOF"
+  | "GET_LAST_PAYMENT"
+  | "GET_DEBT_AGING"
+  | "GET_DEBT_BY_TOWER"
+  | "GET_UNIT_BALANCE_BY_PERIOD"
+  | "GET_URGENT_UNASSIGNED_TICKETS"
+  | "GET_COLLECTIONS_TREND"
+  | "GET_UNIT_DEBT_TREND"
+  | "GET_BUILDING_DEBT_TOTAL"
+  | "GET_BUILDING_DEBT_TREND"
+  | "CROSS_QUERY"
+  | "SEARCH_PROCESSES";
 
 export type BuildingOSLegacyIntentAlias =
   | "admin_arrears_by_building"
@@ -29,7 +42,14 @@ export type BuildingOSIntentDefinition = {
     | "vacantUnitsResolver"
     | "collectionsSummaryResolver"
     | "unitDebtResolver"
-    | "unitPrimaryResidentResolver";
+    | "unitPrimaryResidentResolver"
+    | "rejectedTodayResolver"
+    | "paymentsWithoutProofResolver"
+    | "lastPaymentResolver"
+    | "debtAgingResolver"
+    | "debtByTowerResolver"
+    | "unitBalanceByPeriodResolver"
+    | "urgentUnassignedTicketsResolver";
   responseType: BuildingOSReadOnlyResponseType;
   answerSource: "live_data";
   classifierHints: string[];
@@ -37,6 +57,7 @@ export type BuildingOSIntentDefinition = {
 };
 
 const ADMIN_ONLY_ROLES = ["SUPER_ADMIN", "TENANT_OWNER", "TENANT_ADMIN", "OPERATOR"];
+const TICKET_READ_ROLES = [...ADMIN_ONLY_ROLES, "RESIDENT"];
 
 export const BUILDINGOS_INTENT_REGISTRY: readonly BuildingOSIntentDefinition[] = [
   {
@@ -124,7 +145,7 @@ export const BUILDINGOS_INTENT_REGISTRY: readonly BuildingOSIntentDefinition[] =
       "Necesito tickets OPEN e IN_PROGRESS",
       "Qué tickets siguen activos",
     ],
-    rolesAllowed: ADMIN_ONLY_ROLES,
+    rolesAllowed: TICKET_READ_ROLES,
     resolverKey: "openTicketsResolver",
     responseType: "list",
     answerSource: "live_data",
@@ -274,6 +295,194 @@ export const BUILDINGOS_INTENT_REGISTRY: readonly BuildingOSIntentDefinition[] =
     ],
     legacyAliases: ["admin_unit_primary_resident"],
   },
+  {
+    code: "GET_REJECTED_TODAY",
+    examples: [
+      "Mostrame pagos rechazados hoy",
+      "Qué pagos fueron rechazados hoy",
+      "Pagos rechazados del día",
+      "Rechazados de hoy",
+      "Pagos rechazados esta jornada",
+      "Qué transferencias fueron rechazadas",
+      "Mostrame pagos fallidos de hoy",
+      "Estado rechazado del día",
+      "Pagos denegados de hoy",
+      "Mostrame rechazados",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "rejectedTodayResolver",
+    responseType: "list",
+    answerSource: "live_data",
+    classifierHints: [
+      "rechazado",
+      "rechazados",
+      "rechazo",
+      "hoy",
+      "dia",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_PAYMENTS_WITHOUT_PROOF",
+    examples: [
+      "Pagos sin comprobante",
+      "Pagos sin recibo",
+      "Pagos sin evidencia",
+      "Transferencias sin backup",
+      "Pagos sin receipt",
+      "Pagos sin voucher",
+      "Qué pagos no tienen comprobante",
+      "Pagos sin archivo adjunto",
+      "Pagos missing receipt",
+      "Pagos pendientes de comprobante",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "paymentsWithoutProofResolver",
+    responseType: "list",
+    answerSource: "live_data",
+    classifierHints: [
+      "sin comprobante",
+      "sin receipt",
+      "sin recibo",
+      "sin evidencia",
+      "sin backup",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_LAST_PAYMENT",
+    examples: [
+      "Último pago de la unidad 101",
+      "Cuándo fue el último pago",
+      "Último comprobante",
+      "Recibo más reciente",
+      "Último pago registrado",
+      "Cuándo cobró la unidad",
+      "Fecha del último pago",
+      "Último pago del mes pasado",
+      "Recibo anterior",
+      "Última transferencia registrada",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "lastPaymentResolver",
+    responseType: "exact",
+    answerSource: "live_data",
+    classifierHints: [
+      "ultimo pago",
+      "último pago",
+      "último recibo",
+      "último comprobante",
+      "último",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_DEBT_AGING",
+    examples: [
+      "Antigüedad de la deuda",
+      "Cuántos días de mora tienen",
+      "Deuda por aging",
+      "Días de vencimiento",
+      "Cómo evoluciona la mora",
+      "Cuántos días de atraso tienen las unidades",
+      "Rango de antigüedad de deuda",
+      "Morosidad por días",
+      "Cuánto tiempo llevan sin pagar",
+      "Antigüedad promedio de la deuda",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "debtAgingResolver",
+    responseType: "summary",
+    answerSource: "live_data",
+    classifierHints: [
+      "antigüedad",
+      "aging",
+      "días",
+      "mora",
+      "vencimiento",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_DEBT_BY_TOWER",
+    examples: [
+      "Deuda por torre",
+      "Deuda por edificio",
+      "Porcentaje de cobranza por torre",
+      "Qué torre tiene más morosos",
+      "Cobranza por edificio",
+      "Morosidad por edificio",
+      "Deuda por complejo",
+      "Cobranza por torre A",
+      "Porcentaje de mora por edificio",
+      "Ranking de torres por deuda",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "debtByTowerResolver",
+    responseType: "summary",
+    answerSource: "live_data",
+    classifierHints: [
+      "torre",
+      "edificio",
+      "deuda",
+      "cobranza",
+      "cobabilidad",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_UNIT_BALANCE_BY_PERIOD",
+    examples: [
+      "Historial de deuda de la unidad",
+      "Evolución del saldo",
+      "Serie histórica de deuda",
+      "Deuda por período",
+      "Cómo evolucionó la deuda",
+      "Balance de la unidad por mes",
+      "Deuda mes a mes",
+      "Estado de cuenta histórico",
+      "Saldo por período",
+      "Evolución mensual de expensas",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "unitBalanceByPeriodResolver",
+    responseType: "summary",
+    answerSource: "live_data",
+    classifierHints: [
+      "historial",
+      "evolución",
+      "serie histórica",
+      "por período",
+    ],
+    legacyAliases: [],
+  },
+  {
+    code: "GET_URGENT_UNASSIGNED_TICKETS",
+    examples: [
+      "Tickets urgentes sin asignar",
+      "Urgentes pendientes de asignar",
+      "Alta prioridad sin asignar",
+      "Tickets high sin assignee",
+      "Reclamos urgentes sin atender",
+      "Tickets PRIORITY_HIGH sin assignee",
+      "Casos urgentes sin gestionar",
+      "Tickets que necesitan atención urgente",
+      "Reclamos pendientes de asignación",
+      "Support urgente sin responsable",
+    ],
+    rolesAllowed: ADMIN_ONLY_ROLES,
+    resolverKey: "urgentUnassignedTicketsResolver",
+    responseType: "list",
+    answerSource: "live_data",
+    classifierHints: [
+      "urgente",
+      "urgentes",
+      "sin asignar",
+      "alta prioridad",
+      "high",
+    ],
+    legacyAliases: [],
+  },
 ] as const;
 
 const intentByCode = new Map(
@@ -288,8 +497,8 @@ const aliasToCanonical = new Map<BuildingOSLegacyIntentAlias, BuildingOSCanonica
 
 export function getBuildingOSIntentDefinition(
   code: BuildingOSCanonicalIntentCode
-): BuildingOSIntentDefinition {
-  return intentByCode.get(code)!;
+): BuildingOSIntentDefinition | undefined {
+  return intentByCode.get(code);
 }
 
 export function getBuildingOSIntentDefinitions(): readonly BuildingOSIntentDefinition[] {

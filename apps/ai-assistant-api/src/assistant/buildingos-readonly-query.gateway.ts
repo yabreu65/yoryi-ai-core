@@ -6,6 +6,10 @@ import type {
   BuildingOSReadOnlyQueryGateway,
   BuildingOSReadOnlyQueryInput,
 } from "@yoryi/ai-adapters";
+import {
+  ASSISTANT_RESPONSE_SCHEMA_VERSION,
+  ASSISTANT_RESPONSE_SCHEMA_VERSION_V2,
+} from "@yoryi/ai-types";
 
 type HttpReadOnlyQueryGatewayOptions = {
   baseUrl?: string;
@@ -19,14 +23,23 @@ type HttpReadOnlyQueryGatewayOptions = {
 type ReadOnlyGatewayResponse = {
   contractVersion?: string;
   answer: string;
-  answerSource?: "live_data";
-  responseType?: "metric" | "list" | "summary" | "no_data" | "clarification";
+  answerSource?: "live_data" | "snapshot" | "clarification";
+  responseType?: "exact" | "list" | "summary" | "clarification";
   dataScope?: "tenant" | "self" | "module" | "unknown";
   actions?: ActionDefinition[];
   metadata?: Record<string, unknown>;
 };
 
 const RESPONSE_SCHEMA_VERSION = "2026-04-p0-response-v1";
+const RESPONSE_SCHEMA_VERSION_V2 = "2026-05-p2-response-v2";
+
+const P2_TOOL_ALLOWLIST = new Set([
+  "get_unit_debt_trend",
+  "get_building_debt_trend",
+  "get_collections_trend",
+] as const);
+
+type P2ToolName = (typeof P2_TOOL_ALLOWLIST)[number];
 
 export class HttpBuildingOSReadOnlyQueryGateway
   implements BuildingOSReadOnlyQueryGateway
@@ -68,6 +81,17 @@ export class HttpBuildingOSReadOnlyQueryGateway
         ? `/assistant/tools/${input.toolName}`
         : this.endpointPath;
       const url = new URL(endpointPath, this.baseUrl);
+
+      const headers = this.buildHeadersForContext(input.context);
+      console.log("[GATEWAY] Sending request to:", url.toString());
+      console.log("[GATEWAY] Headers:", JSON.stringify(headers));
+      console.log("[GATEWAY] Body context:", JSON.stringify({
+        tenantId: input.context.tenantId,
+        userId: input.context.userId,
+        role: input.context.role,
+        toolName: input.toolName,
+      }));
+
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: this.buildHeadersForContext(input.context),
@@ -91,13 +115,16 @@ export class HttpBuildingOSReadOnlyQueryGateway
       });
 
       if (!response.ok) {
+        console.log("[GATEWAY] HTTP error:", response.status, response.statusText);
         this.registerFailure();
         return null;
       }
 
       const payload = (await response.json()) as unknown;
+      console.log("[GATEWAY] Raw response:", JSON.stringify(payload).substring(0, 200));
       const parsed = this.parseGatewayResponse(payload);
       if (!parsed) {
+        console.log("[GATEWAY] Parse failed, payload type:", typeof payload);
         this.registerFailure();
         return null;
       }
@@ -170,7 +197,7 @@ export class HttpBuildingOSReadOnlyQueryGateway
         answer: payload.answer as string,
         answerSource:
           payload.answerSource === "live_data" ? "live_data" : undefined,
-        responseType: payload.responseType as ReadOnlyGatewayResponse["responseType"],
+        responseType: this.normalizeResponseType(payload.responseType),
         dataScope: payload.dataScope as ReadOnlyGatewayResponse["dataScope"],
         actions: payload.actions as ActionDefinition[],
         metadata: payload.metadata as Record<string, unknown>,
@@ -194,7 +221,7 @@ export class HttpBuildingOSReadOnlyQueryGateway
     const metadata = this.parseMetadata(payload.metadata);
 
     if (responseType) {
-      response.responseType = responseType as ReadOnlyGatewayResponse["responseType"];
+      response.responseType = this.normalizeResponseType(responseType);
     }
     if (dataScope) {
       response.dataScope = dataScope as ReadOnlyGatewayResponse["dataScope"];
@@ -266,6 +293,30 @@ export class HttpBuildingOSReadOnlyQueryGateway
 
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private normalizeResponseType(
+    value: unknown
+  ): ReadOnlyGatewayResponse["responseType"] | undefined {
+    const normalized = this.asNonEmptyString(value)?.toLowerCase();
+    if (!normalized) {
+      return undefined;
+    }
+    if (normalized === "metric") {
+      return "exact";
+    }
+    if (normalized === "no_data") {
+      return "clarification";
+    }
+    if (
+      normalized === "exact" ||
+      normalized === "summary" ||
+      normalized === "list" ||
+      normalized === "clarification"
+    ) {
+      return normalized;
+    }
+    return undefined;
   }
 
   private isRecord(value: unknown): value is Record<string, unknown> {
